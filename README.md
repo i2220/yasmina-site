@@ -57,6 +57,27 @@
 
 من Settings ثم Domains & Routes أضف نطاقك واتبع الخطوات.
 
+## ربط زووم: إنشاء الروابط من لوحة التحكم
+
+بعد الربط يظهر في بطاقة كل حجز زر **إنشاء رابط زووم**. تختار التاريخ والساعة (يُقترح أقرب يوم مما اختاره ولي الأمر)، فينشئ الموقع اجتماعًا في حسابك، ويحفظ الرابط على الحجز، ويحوّل حالته إلى مؤكد، ويضع الرابط والموعد في رسالة واتساب التأكيد.
+
+1. افتح marketplace.zoom.us وسجّل الدخول بحساب زووم الذي ستُنشأ منه الاجتماعات.
+2. اختر Develop ثم Build App ثم **Server-to-Server OAuth App** ثم Create، واكتب أي اسم مثل Yasmina.
+3. من صفحة App Credentials انسخ **Account ID** و**Client ID** و**Client Secret**.
+4. من Scopes اضغط Add Scopes، واختر Meeting، وأضف `meeting:write:meeting:admin` لإنشاء الاجتماع، و`meeting:delete:meeting:admin` لحذف الاجتماع القديم عند إنشاء بديل. وإن ظهرت لك الصلاحيات بالصيغة القديمة فأضف `meeting:write:admin` و`meeting:delete:admin`.
+5. اضغط Activate لتفعيل التطبيق.
+6. في Cloudflare، من Settings ثم Variables and Secrets، أضف ثلاثة أسرار من نوع Secret:
+
+| الاسم | القيمة |
+| --- | --- |
+| `ZOOM_ACCOUNT_ID` | Account ID |
+| `ZOOM_CLIENT_ID` | Client ID |
+| `ZOOM_CLIENT_SECRET` | Client Secret |
+
+7. اضغط Deploy، ثم افتح لوحة التحكم، وفي تبويب إعدادات الموقع اكتب بريد حساب زووم نفسه وحدّد مدة الحصة، واحفظ. سيظهر أسفل الحقل أن الربط مفعّل.
+
+ملاحظات: الحساب المجاني في زووم يحدّد مدة الاجتماعات الجماعية بـ 40 دقيقة. الاجتماعات تُنشأ بتوقيت الكويت مع غرفة انتظار، فتقبل دخول الأطفال من المضيف. ويُنشأ كل رابط عند الضغط فقط، ولا يُنشأ شيء تلقائيًا.
+
 ## حماية لوحة التحكم
 
 - كلمة المرور محفوظة كسر في Cloudflare ولا تظهر في الكود.
@@ -68,7 +89,7 @@
 
 ```bash
 npm test                      # فحص الواجهة الخلفية على قاعدة SQLite محلية
-node tests/dev-server.mjs     # معاينة محلية على http://localhost:8788 (كلمة المرور yasmina-dev)
+ZOOM_MOCK=1 node tests/dev-server.mjs  # معاينة محلية مع زووم وهمي على http://localhost:8788 (كلمة المرور yasmina-dev)
 ```
 
 لتشغيله بـ Wrangler نفّذ `npm install` ثم `npm run dev` (يحتاج تسجيل الدخول إلى Cloudflare).

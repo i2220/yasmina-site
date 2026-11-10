@@ -21,7 +21,21 @@ const routes = {
   'DELETE /api/admin/bookings': ['functions/api/admin/bookings.js', 'onRequestDelete'],
   'GET /api/admin/settings': ['functions/api/admin/settings.js', 'onRequestGet'],
   'PUT /api/admin/settings': ['functions/api/admin/settings.js', 'onRequestPut'],
+  'POST /api/admin/zoom': ['functions/api/admin/zoom.js', 'onRequestPost'],
 };
+
+// ZOOM_MOCK=1 pretends to be Zoom so the panel can be tried without real credentials
+if (process.env.ZOOM_MOCK) {
+  Object.assign(env, { ZOOM_ACCOUNT_ID: 'mock', ZOOM_CLIENT_ID: 'mock', ZOOM_CLIENT_SECRET: 'mock' });
+  const real = globalThis.fetch;
+  globalThis.fetch = async (u, init) => {
+    const s = String(u);
+    if (s.startsWith('https://zoom.us/oauth/token')) return Response.json({ access_token: 'mock', expires_in: 3600 });
+    if (s.startsWith('https://api.zoom.us/v2/users/')) return Response.json({ id: 8123456789, join_url: 'https://zoom.us/j/8123456789?pwd=mock' }, { status: 201 });
+    if (s.startsWith('https://api.zoom.us/')) return new Response(null, { status: 204 });
+    return real(u, init);
+  };
+}
 const types = { '.html': 'text/html; charset=utf-8', '.svg': 'image/svg+xml', '.txt': 'text/plain', '.js': 'text/javascript', '.css': 'text/css' };
 
 http

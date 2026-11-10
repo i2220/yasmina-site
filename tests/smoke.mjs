@@ -8,6 +8,9 @@ import * as me from '../functions/api/admin/me.js';
 import * as bookings from '../functions/api/admin/bookings.js';
 import * as adminSettings from '../functions/api/admin/settings.js';
 import worker from '../src/worker.js';
+import * as zoomRoute from '../functions/api/admin/zoom.js';
+import { resetZoomCache } from '../src/zoom.js';
+import { _resetSchema } from '../src/lib.js';
 
 const env = { DB: fakeD1(), ADMIN_PASSWORD: 'correct horse', SESSION_SECRET: 'test-secret' };
 const origin = 'https://yasmina.example';
@@ -136,6 +139,118 @@ await t('missing database gives a clear Arabic error', async () => {
   assert.equal(res.status, 500);
   assert.match((await res.json()).error, /D1/);
 });
+
+/* ---------- Zoom (Zoom itself is replaced by a stand-in) ---------- */
+const zenv = { ...env, ZOOM_ACCOUNT_ID: 'acc', ZOOM_CLIENT_ID: 'cid', ZOOM_CLIENT_SECRET: 'sec' };
+const zcall = async (body, headers = auth, e = zenv) => {
+  const res = await zoomRoute.onRequestPost({ request: req('/api/admin/zoom', 'POST', body, headers), env: e });
+  return { res, data: await res.json() };
+};
+const futureDate = new Date(Date.now() + 2 * 864e5).toISOString().slice(0, 10);
+const realFetch = globalThis.fetch;
+let seen = [];
+let zoomMode = 'ok';
+globalThis.fetch = async (u, init = {}) => {
+  const url = String(u);
+  seen.push({ url, init });
+  if (url.startsWith('https://zoom.us/oauth/token')) return Response.json({ access_token: 'tok', expires_in: 3600 });
+  if (init.method === 'POST' && url.includes('/meetings')) {
+    if (zoomMode === 'error') return Response.json({ code: 124, message: 'Invalid access token.' }, { status: 401 });
+    return Response.json({ id: 555 + seen.length, join_url: 'https://zoom.us/j/555?pwd=z' }, { status: 201 });
+  }
+  return new Response(null, { status: 204 });
+};
+resetZoomCache();
+const firstId = async () => (await call(bookings.onRequestGet, req('/api/admin/bookings', 'GET', null, auth))).data.bookings[0].id;
+
+await t('zoom is refused when it is not connected, or when signed out', async () => {
+  const id = await firstId();
+  const a = await zcall({ id, date: futureDate, time: '16:00' }, auth, env);
+  assert.equal(a.res.status, 400);
+  assert.match(a.data.error, /زووم غير مربوط/);
+  assert.equal((await zcall({ id, date: futureDate, time: '16:00' }, {})).res.status, 401);
+});
+await t('zoom meeting is created in Kuwait time, saved on the booking, and the booking is confirmed', async () => {
+  const id = await firstId();
+  seen = [];
+  const { res, data } = await zcall({ id, date: futureDate, time: '16:00' });
+  assert.equal(res.status, 200);
+  assert.equal(data.zoom_link, 'https://zoom.us/j/555?pwd=z');
+  const tokenCall = seen.find((s) => s.url.startsWith('https://zoom.us/oauth/token'));
+  assert.match(tokenCall.url, /account_id=acc/);
+  assert.equal(tokenCall.init.headers.authorization, 'Basic ' + btoa('cid:sec'));
+  const meet = seen.find((s) => s.url.includes('/meetings'));
+  assert.match(meet.url, /\/v2\/users\/me\/meetings$/);
+  const body = JSON.parse(meet.init.body);
+  assert.equal(body.timezone, 'Asia/Kuwait');
+  assert.equal(body.start_time, `${futureDate}T16:00:00`);
+  assert.equal(body.duration, 40);
+  assert.equal(body.type, 2);
+  const row = (await call(bookings.onRequestGet, req('/api/admin/bookings', 'GET', null, auth))).data.bookings.find((b) => b.id === id);
+  assert.equal(row.zoom_link, data.zoom_link);
+  assert.equal(row.zoom_start, `${futureDate} 16:00`);
+  assert.equal(row.status, 'confirmed');
+});
+await t('creating again replaces the meeting and deletes the old one', async () => {
+  const id = await firstId();
+  seen = [];
+  const { res } = await zcall({ id, date: futureDate, time: '17:30', duration: 60 });
+  assert.equal(res.status, 200);
+  const del = seen.find((s) => s.init.method === 'DELETE');
+  assert.ok(del && /\/v2\/meetings\/\d+$/.test(del.url));
+  assert.equal(JSON.parse(seen.find((s) => s.init.method === 'POST' && s.url.includes('/meetings')).init.body).duration, 60);
+});
+await t('the host email from the settings is used', async () => {
+  await call(adminSettings.onRequestPut, req('/api/admin/settings', 'PUT', { zoomHostEmail: 'teacher@example.com', zoomDuration: 45 }, auth));
+  seen = [];
+  await zcall({ id: await firstId(), date: futureDate, time: '15:00' });
+  const meet = seen.find((s) => s.url.includes('/meetings') && s.init.method === 'POST');
+  assert.match(meet.url, /users\/teacher%40example\.com\/meetings/);
+  assert.equal(JSON.parse(meet.init.body).duration, 45);
+});
+await t('zoom input is validated', async () => {
+  const id = await firstId();
+  assert.equal((await zcall({ id, date: '2020-01-01', time: '10:00' })).res.status, 400);
+  assert.equal((await zcall({ id, date: 'nope', time: '10:00' })).res.status, 400);
+  assert.equal((await zcall({ id: 99999, date: futureDate, time: '10:00' })).res.status, 404);
+  assert.equal((await call(adminSettings.onRequestPut, req('/api/admin/settings', 'PUT', { zoomHostEmail: 'not-an-email' }, auth))).res.status, 400);
+  assert.equal((await call(adminSettings.onRequestPut, req('/api/admin/settings', 'PUT', { zoomDuration: 5 }, auth))).res.status, 400);
+});
+await t('a Zoom error is shown to the admin and the booking is left alone', async () => {
+  const id = await firstId();
+  const before = (await call(bookings.onRequestGet, req('/api/admin/bookings', 'GET', null, auth))).data.bookings.find((b) => b.id === id).zoom_link;
+  zoomMode = 'error';
+  resetZoomCache();
+  const { res, data } = await zcall({ id, date: futureDate, time: '12:00' });
+  zoomMode = 'ok';
+  assert.equal(res.status, 502);
+  assert.match(data.error, /Invalid access token/);
+  const after = (await call(bookings.onRequestGet, req('/api/admin/bookings', 'GET', null, auth))).data.bookings.find((b) => b.id === id).zoom_link;
+  assert.equal(after, before);
+});
+await t('settings report whether Zoom is connected', async () => {
+  const a = await adminSettings.onRequestGet({ request: req('/api/admin/settings', 'GET', null, auth), env });
+  assert.equal((await a.json()).zoomConfigured, false);
+  const b = await adminSettings.onRequestGet({ request: req('/api/admin/settings', 'GET', null, auth), env: zenv });
+  assert.equal((await b.json()).zoomConfigured, true);
+});
+await t('a database made by the first release is upgraded without losing bookings', async () => {
+  const old = fakeD1();
+  await old.prepare(`CREATE TABLE bookings (id INTEGER PRIMARY KEY AUTOINCREMENT, created_at TEXT NOT NULL DEFAULT (datetime('now')), child TEXT NOT NULL, grade TEXT NOT NULL, parent TEXT NOT NULL, phone TEXT NOT NULL, kind TEXT NOT NULL, days TEXT NOT NULL, times TEXT NOT NULL, notes TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'new', admin_note TEXT NOT NULL DEFAULT '')`).run();
+  await old.prepare("INSERT INTO bookings (child, grade, parent, phone, kind, days, times) VALUES ('قديم','الأول الابتدائي','أب','55500000','حصة فردية','[\"الأحد\"]','[\"3:00 م\"]')").run();
+  _resetSchema();
+  const oenv = { ...zenv, DB: old };
+  const list = await bookings.onRequestGet({ request: req('/api/admin/bookings', 'GET', null, auth), env: oenv });
+  const rows = (await list.json()).bookings;
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].child, 'قديم');
+  assert.equal(rows[0].zoom_link, '');
+  const z = await zcall({ id: rows[0].id, date: futureDate, time: '16:00' }, auth, oenv);
+  assert.equal(z.res.status, 200);
+  _resetSchema(); // run the upgrade again on an already upgraded database
+  assert.equal((await bookings.onRequestGet({ request: req('/api/admin/bookings', 'GET', null, auth), env: oenv })).status, 200);
+});
+globalThis.fetch = realFetch;
 
 await t('worker routes /api to handlers and everything else to static assets', async () => {
   const wenv = { ...env, ASSETS: { fetch: async () => new Response('<html>static</html>') } };

@@ -9,6 +9,8 @@ export const DEFAULTS = {
   whatsapp: '',
   countryCode: '965',
   zoomLink: '',
+  zoomHostEmail: '',
+  zoomDuration: 40,
   announcement: '',
   days: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'],
   times: ['3:00 م', '4:00 م', '5:00 م', '6:00 م', '7:00 م'],
@@ -38,6 +40,26 @@ export function getDb(env) {
 
 export const NO_DB = () => fail('قاعدة البيانات غير مربوطة بعد. اربط قاعدة D1 باسم DB في إعدادات المشروع على Cloudflare.', 500);
 
+export function _resetSchema() {
+  schemaReady = null;
+}
+
+// Columns added after the first release. Adding one that already exists fails harmlessly.
+async function migrate(db) {
+  const cols = [
+    ['zoom_link', "TEXT NOT NULL DEFAULT ''"],
+    ['zoom_meeting_id', "TEXT NOT NULL DEFAULT ''"],
+    ['zoom_start', "TEXT NOT NULL DEFAULT ''"],
+  ];
+  for (const [name, def] of cols) {
+    try {
+      await db.prepare(`ALTER TABLE bookings ADD COLUMN ${name} ${def}`).run();
+    } catch (e) {
+      if (!/duplicate column/i.test(String(e && e.message))) throw e;
+    }
+  }
+}
+
 export function ensureSchema(db) {
   if (!schemaReady) {
     schemaReady = db
@@ -59,6 +81,7 @@ export function ensureSchema(db) {
         db.prepare('CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status, id)'),
         db.prepare('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)'),
       ])
+      .then(() => migrate(db))
       .catch((e) => {
         schemaReady = null;
         throw e;
@@ -94,6 +117,16 @@ export function sanitizeSettings(input) {
     const z = clean(input.zoomLink, 300);
     if (z && !/^https:\/\//i.test(z)) throw new Error('رابط زووم يجب أن يبدأ بـ https://');
     s.zoomLink = z;
+  }
+  if ('zoomHostEmail' in input) {
+    const e = clean(input.zoomHostEmail, 120);
+    if (e && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) throw new Error('اكتب بريد حساب زووم بشكل صحيح.');
+    s.zoomHostEmail = e;
+  }
+  if ('zoomDuration' in input) {
+    const d = Math.round(Number(input.zoomDuration));
+    if (!Number.isFinite(d) || d < 10 || d > 240) throw new Error('مدة الحصة بين 10 و240 دقيقة.');
+    s.zoomDuration = d;
   }
   if ('announcement' in input) s.announcement = clean(input.announcement, 140);
   if ('days' in input) {

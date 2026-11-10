@@ -94,6 +94,11 @@ fieldset{border:0;min-width:0}legend{font-weight:700;font-size:15px;margin-botto
 .chip span{display:inline-flex;align-items:center;min-height:40px;padding:0 18px;border-radius:99px;border:1.5px solid var(--line);font-weight:600}
 .chip input:checked+span{background:var(--yellow);color:#151510;border-color:var(--yellow)}
 .chip input:focus-visible+span{outline:2px solid var(--gold);outline-offset:3px}
+.zoombox{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 14px;border:1px dashed var(--line);border-radius:14px}
+.zlink{color:var(--blue);overflow-wrap:anywhere;direction:ltr;text-align:right;font-size:14px;flex:1 1 200px;min-width:0}
+.zform{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;width:100%}
+.zf{display:grid;gap:2px}
+.zf input{width:auto;min-height:40px;padding:4px 12px}
 .toast{position:fixed;inset-inline:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));margin-inline:auto;width:fit-content;max-width:min(92vw,520px);padding:12px 22px;border-radius:99px;background:var(--yellow);color:#151510;font-weight:700;box-shadow:0 10px 40px rgba(0,0,0,.6);z-index:20}
 .toast.bad{background:var(--bad)}
 @media (max-width:720px){
@@ -152,7 +157,12 @@ fieldset{border:0;min-width:0}legend{font-weight:700;font-size:15px;margin-botto
           <div class="field"><label class="t" for="sWhats">رقم واتساب للتواصل (بصيغة دولية)</label><input id="sWhats" type="tel" inputmode="numeric" dir="ltr" placeholder="96550000000" style="text-align:right"><span class="hint">يظهر زر واتساب للأهل بعد الحجز.</span></div>
           <div class="field"><label class="t" for="sCc">رمز الدولة الافتراضي</label><input id="sCc" type="text" inputmode="numeric" dir="ltr" placeholder="965" style="text-align:right"><span class="hint">يُضاف إلى أرقام الأهل المكتوبة بدونه.</span></div>
         </div>
-        <div class="field"><label class="t" for="sZoom">رابط اجتماع زووم</label><input id="sZoom" type="url" dir="ltr" placeholder="https://zoom.us/j/..." style="text-align:right"><span class="hint">لا يظهر للزوار، يُستخدم في رسالة تأكيد الموعد.</span></div>
+        <div class="field"><label class="t" for="sZoom">رابط اجتماع زووم</label><input id="sZoom" type="url" dir="ltr" placeholder="https://zoom.us/j/..." style="text-align:right"><span class="hint">رابط ثابت احتياطي لا يظهر للزوار. يُستخدم في رسالة التأكيد إذا لم تنشئ اجتماعًا خاصًا بالحجز.</span></div>
+        <div class="grid2">
+          <div class="field"><label class="t" for="sHost">بريد حساب زووم الذي تُنشأ منه الاجتماعات</label><input id="sHost" type="text" inputmode="email" dir="ltr" placeholder="you@example.com" style="text-align:right"></div>
+          <div class="field"><label class="t" for="sDur">مدة الحصة بالدقائق</label><input id="sDur" type="text" inputmode="numeric" dir="ltr" placeholder="40" style="text-align:right"></div>
+        </div>
+        <p class="hint" id="zoomStatus"></p>
         <div class="field"><label class="t" for="sAnn">إعلان قصير يظهر في الصفحة الرئيسية (اختياري)</label><input id="sAnn" type="text" maxlength="140" placeholder="مثال: خصم 20% على الحجز الأول"></div>
         <fieldset><legend>الأيام المتاحة للحجز</legend><div class="chips" id="sDays"></div></fieldset>
         <div class="field"><label class="t" for="sTimes">الأوقات المتاحة (وقت في كل سطر، بتوقيت الكويت)</label><textarea id="sTimes" dir="rtl" placeholder="3:00 م&#10;4:00 م"></textarea></div>
@@ -204,13 +214,58 @@ fieldset{border:0;min-width:0}legend{font-weight:700;font-size:15px;margin-botto
 
   /* ----- bookings ----- */
   const fmtDate=s=>{try{return new Intl.DateTimeFormat('ar-KW-u-nu-latn',{timeZone:'Asia/Kuwait',dateStyle:'medium',timeStyle:'short'}).format(new Date(s.replace(' ','T')+'Z'))}catch(e){return s}};
+  /* when the class happens: the Zoom slot if there is one, otherwise what the parent asked for */
+  function slot(b){
+    const m=(b.zoom_start||'').match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/);
+    if(m){
+      const day=new Intl.DateTimeFormat('ar',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(Date.UTC(+m[1],+m[2]-1,+m[3])));
+      const h=+m[4];
+      return {day,time:((h+11)%12+1)+':'+m[5]+' '+(h<12?'ص':'م')};
+    }
+    return {day:b.days.join('، '),time:b.times.join('، ')};
+  }
+  const DAYIDX={'الأحد':0,'الاثنين':1,'الثلاثاء':2,'الأربعاء':3,'الخميس':4,'الجمعة':5,'السبت':6};
+  function defaultDate(b){
+    const now=new Date();let best=null;
+    b.days.forEach(d=>{const i=DAYIDX[d];if(i===undefined)return;const diff=(i-now.getDay()+7)%7||7;if(best===null||diff<best)best=diff});
+    const dt=new Date(now.getFullYear(),now.getMonth(),now.getDate()+(best===null?1:best));
+    return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+  }
+  function defaultTime(b){
+    const m=(b.times[0]||'').match(/(\d{1,2}):(\d{2})\s*([صم])/);
+    if(!m)return '16:00';
+    let h=+m[1]%12;if(m[3]==='م')h+=12;
+    return String(h).padStart(2,'0')+':'+m[2];
+  }
+  function openZoomForm(b,box,btn){
+    if(settings&&settings.zoomConfigured===false){toast('زووم غير مربوط بعد. أضف بيانات الربط ثم جرّب.',true);tab('s');return}
+    btn.hidden=true;
+    const f=el('form','zform');
+    const field=(label,input)=>{const w=el('label','zf');w.append(el('span','hint',label),input);return w};
+    const d=el('input');d.type='date';d.value=defaultDate(b);d.required=true;
+    const t=el('input');t.type='time';t.value=defaultTime(b);t.required=true;
+    const n=el('input');n.type='number';n.min=10;n.max=240;n.value=(settings&&settings.zoomDuration)||40;
+    const ok=el('button','btn sm','إنشاء الاجتماع');ok.type='submit';
+    const no=el('button','ghost sm','إلغاء');no.type='button';
+    no.addEventListener('click',()=>{f.remove();btn.hidden=false});
+    f.append(field('التاريخ',d),field('الساعة (بتوقيت الكويت)',t),field('المدة بالدقائق',n),ok,no);
+    f.addEventListener('submit',async e=>{
+      e.preventDefault();ok.disabled=true;ok.textContent='جارٍ الإنشاء…';
+      try{
+        await api('/api/admin/zoom',{method:'POST',body:{id:b.id,date:d.value,time:t.value,duration:Number(n.value)}});
+        toast('تم إنشاء رابط زووم وتأكيد الحجز');loadBookings(true);
+      }catch(err){toast(err.message,true);ok.disabled=false;ok.textContent='إنشاء الاجتماع'}
+    });
+    box.append(f);d.focus();
+  }
   function waLink(b){
     const s=settings||{};let d=String(b.phone).replace(/\D/g,'').replace(/^00/,'');
     const cc=(s.countryCode||'').replace(/\D/g,'');
     if(cc&&d.length<=8)d=cc+d;
     const tpl=s.confirmTemplate||'';
+    const w=slot(b);
     const text=tpl.replace(/\{parent\}/g,b.parent).replace(/\{child\}/g,b.child).replace(/\{grade\}/g,b.grade)
-      .replace(/\{day\}/g,b.days.join('، ')).replace(/\{time\}/g,b.times.join('، ')).replace(/\{zoom\}/g,s.zoomLink||'(أضف رابط زووم من الإعدادات)');
+      .replace(/\{day\}/g,w.day).replace(/\{time\}/g,w.time).replace(/\{zoom\}/g,b.zoom_link||s.zoomLink||'(أنشئ رابط زووم لهذا الحجز أولًا)');
     return 'https://wa.me/'+d+'?text='+encodeURIComponent(text);
   }
   function renderStats(counts){
@@ -238,6 +293,17 @@ fieldset{border:0;min-width:0}legend{font-weight:700;font-size:15px;margin-botto
       fact(dl,'الأيام',b.days.join('، '));fact(dl,'الأوقات',b.times.join('، '));
       c.append(top,dl);
       if(b.notes)c.append(el('div','notes',b.notes));
+      const zb=el('div','zoombox');
+      if(b.zoom_link){
+        zb.append(el('span','hint','اجتماع زووم'+(b.zoom_start?' · '+slot(b).day+' الساعة '+slot(b).time:'')));
+        const za=el('a','zlink',b.zoom_link);za.href=b.zoom_link;za.target='_blank';za.rel='noopener';
+        const cp=el('button','ghost sm','نسخ الرابط');cp.type='button';
+        cp.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(b.zoom_link);toast('تم نسخ الرابط')}catch(e){toast('انسخ الرابط يدويًا من النص',true)}});
+        zb.append(za,cp);
+      }
+      const zm=el('button','ghost sm',b.zoom_link?'إنشاء اجتماع جديد':'إنشاء رابط زووم');zm.type='button';
+      zm.addEventListener('click',()=>openZoomForm(b,zb,zm));
+      zb.append(zm);c.append(zb);
       const ac=el('div','actions');
       const sel=el('select');sel.setAttribute('aria-label','حالة الحجز');
       Object.entries(STATUS).forEach(([k,l])=>{const o=el('option','',l);o.value=k;if(k===b.status)o.selected=true;sel.append(o)});
@@ -277,9 +343,10 @@ fieldset{border:0;min-width:0}legend{font-weight:700;font-size:15px;margin-botto
   /* ----- settings ----- */
   async function loadSettings(){
     try{
-      const j=await api('/api/admin/settings');settings=j.settings;
+      const j=await api('/api/admin/settings');settings=j.settings;settings.zoomConfigured=j.zoomConfigured;
       $('sWhats').value=settings.whatsapp||'';$('sCc').value=settings.countryCode||'';$('sZoom').value=settings.zoomLink||'';
-      $('sAnn').value=settings.announcement||'';$('sTpl').value=settings.confirmTemplate||'';$('sTimes').value=(settings.times||[]).join('\n');
+      $('sAnn').value=settings.announcement||'';$('sHost').value=settings.zoomHostEmail||'';$('sDur').value=settings.zoomDuration||40;
+      $('zoomStatus').textContent=j.zoomConfigured?'ربط زووم مفعّل. أنشئ الاجتماعات من بطاقة كل حجز.':'ربط زووم غير مفعّل. أضف ZOOM_ACCOUNT_ID وZOOM_CLIENT_ID وZOOM_CLIENT_SECRET كأسرار في Cloudflare، والخطوات في ملف README.';$('sTpl').value=settings.confirmTemplate||'';$('sTimes').value=(settings.times||[]).join('\n');
       const box=$('sDays');box.textContent='';
       j.allDays.forEach(d=>{const l=el('label','chip');const i=el('input');i.type='checkbox';i.value=d;i.checked=(settings.days||[]).includes(d);l.append(i,el('span','',d));box.append(l)});
       renderList();
@@ -289,10 +356,10 @@ fieldset{border:0;min-width:0}legend{font-weight:700;font-size:15px;margin-botto
     e.preventDefault();$('setErr').textContent='';$('saveSettings').disabled=true;
     try{
       const j=await api('/api/admin/settings',{method:'PUT',body:{
-        whatsapp:$('sWhats').value,countryCode:$('sCc').value,zoomLink:$('sZoom').value,announcement:$('sAnn').value,confirmTemplate:$('sTpl').value,
+        whatsapp:$('sWhats').value,countryCode:$('sCc').value,zoomLink:$('sZoom').value,announcement:$('sAnn').value,confirmTemplate:$('sTpl').value,zoomHostEmail:$('sHost').value,zoomDuration:Number($('sDur').value)||40,
         days:[...document.querySelectorAll('#sDays input:checked')].map(i=>i.value),
         times:$('sTimes').value.split('\n').map(s=>s.trim()).filter(Boolean)}});
-      settings=j.settings;toast('تم حفظ الإعدادات');renderList();
+      const zc=settings&&settings.zoomConfigured;settings=j.settings;settings.zoomConfigured=zc;toast('تم حفظ الإعدادات');renderList();
     }catch(err){$('setErr').textContent=err.message}
     $('saveSettings').disabled=false;
   });
