@@ -1,0 +1,12 @@
+# للتشغيل المحلي أو النشر بسطر الأوامر فقط.
+# إذا ربطت المشروع بـ GitHub من لوحة Cloudflare فلا تحتاج هذا الملف:
+# إعادة تسميته إلى wrangler.toml تجعل Cloudflare يتجاهل الربط الذي ضبطته من اللوحة.
+
+name = "yasmina"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "yasmina-db"
+database_id = "ضع-معرّف-القاعدة-هنا"
