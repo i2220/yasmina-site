@@ -7,6 +7,7 @@ import * as login from '../functions/api/admin/login.js';
 import * as me from '../functions/api/admin/me.js';
 import * as bookings from '../functions/api/admin/bookings.js';
 import * as adminSettings from '../functions/api/admin/settings.js';
+import worker from '../src/worker.js';
 
 const env = { DB: fakeD1(), ADMIN_PASSWORD: 'correct horse', SESSION_SECRET: 'test-secret' };
 const origin = 'https://yasmina.example';
@@ -134,6 +135,19 @@ await t('missing database gives a clear Arabic error', async () => {
   const res = await book.onRequestPost({ request: req('/api/book', 'POST', good), env: {} });
   assert.equal(res.status, 500);
   assert.match((await res.json()).error, /D1/);
+});
+
+await t('worker routes /api to handlers and everything else to static assets', async () => {
+  const wenv = { ...env, ASSETS: { fetch: async () => new Response('<html>static</html>') } };
+  const wf = (path, method = 'GET', body, headers = {}) => worker.fetch(req(path, method, body, headers), wenv);
+  assert.equal((await wf('/api/settings')).status, 200);
+  assert.equal((await wf('/api/admin/me')).status, 401);
+  assert.equal((await wf('/api/nope')).status, 404);
+  assert.equal((await wf('/api/book', 'GET')).status, 404);
+  assert.equal(await (await wf('/admin/')).text(), '<html>static</html>');
+  const l = await wf('/api/admin/login', 'POST', { password: 'correct horse' });
+  assert.equal(l.status, 200);
+  assert.equal((await wf('/api/admin/bookings', 'GET', null, { cookie: l.headers.get('set-cookie').split(';')[0] })).status, 200);
 });
 
 console.log(`\n${n} checks passed`);

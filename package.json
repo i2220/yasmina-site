@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "موقع يسمينا لحجز حصص اللغة الإنجليزية على زووم، مع لوحة تحكم. يعمل على Cloudflare Pages.",
+  "description": "موقع يسمينا لحجز حصص اللغة الإنجليزية على زووم، مع لوحة تحكم. يعمل كـ Cloudflare Worker.",
   "scripts": {
-    "dev": "wrangler pages dev public --d1 DB=yasmina-db",
+    "dev": "wrangler dev",
     "test": "node --disable-warning=ExperimentalWarning tests/smoke.mjs",
     "local": "node --disable-warning=ExperimentalWarning tests/dev-server.mjs"
   },

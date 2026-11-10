@@ -4,7 +4,7 @@
 
 - **الموقع:** `public/index.html` (صفحة واحدة، خط Cairo، وادٍ من أزهار الياسمين تفاعلي).
 - **لوحة التحكم:** `public/admin/index.html`، تفتح على الرابط `/admin` بكلمة مرور.
-- **الخادم:** دوال Cloudflare Pages في `functions/api`، وقاعدة بيانات Cloudflare D1 تُنشأ جداولها تلقائيًا.
+- **الخادم:** Cloudflare Worker (`src/worker.js`) يوجّه المسارات إلى `functions/api`، وقاعدة بيانات Cloudflare D1 تُنشأ جداولها تلقائيًا.
 
 ## ما تفعله لوحة التحكم
 
@@ -16,56 +16,46 @@
 
 ## النشر على Cloudflare (من المتصفح، بدون أوامر)
 
+يعمل المشروع كـ Worker واحد: الملفات الثابتة من `public` والواجهة الخلفية من `src/worker.js`، والإعدادات في `wrangler.jsonc`.
 أسماء القوائم في لوحة Cloudflare تتغير أحيانًا، فإن لم تجد اسمًا بالضبط ابحث عن ما يشبهه.
 
-**1. ارفع المشروع إلى GitHub**
+**1. ارفع المشروع إلى GitHub** (وإن رفعته من قبل فاعمل `git push` للتحديثات فقط).
 
-1. في github.com اختر New repository، اكتب الاسم `yasmina-site`، واتركه فارغًا، ثم Create.
-2. من مجلد المشروع على جهازك:
+**2. اربطه بـ Cloudflare**
 
-```bash
-git remote add origin https://github.com/اسم-حسابك/yasmina-site.git
-git branch -M main
-git push -u origin main
-```
+1. في dash.cloudflare.com افتح Workers & Pages، ثم Create، ثم Import a repository.
+2. اختر المستودع `yasmina-site`، واترك اسم المشروع `yasmina-site` كما هو في `wrangler.jsonc`.
+3. اترك Build command فارغًا، واترك Deploy command كما هو: `npx wrangler deploy`.
+4. اضغط Save and Deploy. بعد كل `git push` يعيد Cloudflare النشر تلقائيًا.
 
-بدون أوامر: افتح المستودع الجديد واختر uploading an existing file، واسحب محتويات المجلد (ليس المجلد نفسه) ثم Commit.
+**3. قاعدة البيانات**
 
-**2. أنشئ المشروع على Cloudflare Pages**
+تُنشأ قاعدة D1 باسم `yasmina-db` تلقائيًا عند أول نشر، وتُربط باسم `DB`. للتأكد افتح Settings ثم Bindings.
+والجداول تُنشأ عند أول حجز، فلا حاجة لأي أوامر.
 
-1. في dash.cloudflare.com افتح Workers & Pages، ثم Create، ثم Pages، ثم Connect to Git.
-2. اختر المستودع `yasmina-site`.
-3. اترك Framework preset على None، واترك Build command فارغًا، واكتب Build output directory: `public`.
-4. اضغط Save and Deploy.
-
-**3. أنشئ قاعدة البيانات وارْبطها**
-
-1. من Storage & Databases ثم D1 اضغط Create، واكتب الاسم `yasmina-db`.
-2. ارجع إلى مشروع Pages ثم Settings ثم Bindings، واضغط Add ثم D1 database.
-3. اكتب اسم المتغير **DB** بالضبط، واختر `yasmina-db`، واحفظ. افعل ذلك في Production وPreview.
-
-لا حاجة لإنشاء جداول، فالموقع ينشئها عند أول حجز.
+إن فشل النشر برسالة عن D1، فأنشئ القاعدة يدويًا من Storage & Databases ثم D1، وانسخ معرّفها (database_id) وأضفه في `wrangler.jsonc` داخل `d1_databases`:
+`"database_id": "المعرّف-هنا"`.
 
 **4. اضبط كلمة مرور لوحة التحكم**
 
-في Settings ثم Variables and Secrets أضف نوعين من نوع Secret:
+في Settings ثم Variables and Secrets أضف سرّين من نوع Secret:
 
 | الاسم | القيمة |
 | --- | --- |
 | `ADMIN_PASSWORD` | كلمة مرور طويلة تختارها لدخول `/admin` |
 | `SESSION_SECRET` | نص عشوائي طويل، مثل 40 حرفًا مختلطًا |
 
-ثم افتح Deployments وأعد النشر (Retry deployment) ليأخذ الموقع القيم الجديدة.
+الأسرار لا تُمسح عند النشر التالي. ولتغيير كلمة المرور لاحقًا عدّل `ADMIN_PASSWORD` من الصفحة نفسها، وغيّر `SESSION_SECRET` أيضًا لإخراج الجلسات القديمة.
 
 **5. جرّب**
 
-- افتح `https://اسم-المشروع.pages.dev` واحجز حصة تجريبية.
+- افتح رابط الموقع (ينتهي بـ `workers.dev`) واحجز حصة تجريبية.
 - افتح `/admin` وادخل بكلمة المرور، وستجد الحجز.
 - من تبويب إعدادات الموقع أدخل رقم واتساب ورابط زووم.
 
 **6. نطاق خاص (اختياري)**
 
-من Custom domains في المشروع أضف نطاقك واتبع الخطوات.
+من Settings ثم Domains & Routes أضف نطاقك واتبع الخطوات.
 
 ## حماية لوحة التحكم
 
@@ -81,8 +71,7 @@ npm test                      # فحص الواجهة الخلفية على قا
 node tests/dev-server.mjs     # معاينة محلية على http://localhost:8788 (كلمة المرور yasmina-dev)
 ```
 
-لتشغيله بـ Wrangler انسخ `wrangler.toml.example` إلى `wrangler.toml` وضع معرّف قاعدة D1، ثم `npm install` و`npm run dev`.
-انتبه: وجود `wrangler.toml` في المستودع يجعل Cloudflare يعتمد على ما فيه بدل إعدادات اللوحة.
+لتشغيله بـ Wrangler نفّذ `npm install` ثم `npm run dev` (يحتاج تسجيل الدخول إلى Cloudflare).
 
 ## ملاحظات
 
