@@ -187,7 +187,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cream);outline-o
   </section>
   <div class="corner"><span>المس الزهور وحرّك السحاب</span>
     <button class="sound" id="mode" type="button" aria-pressed="false" aria-label="الوضع الليلي"><svg viewBox="0 0 24 24"><path class="mo" d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/><g class="su"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"/></g></svg></button>
-    <button class="sound" id="sound" type="button" aria-pressed="false" aria-label="صوت الأجواء"><svg viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18V6L7.5 9.5Z"/><path class="w" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="x" d="m16 10 4 4m0-4-4 4"/></svg></button>
+    <button class="sound" id="sound" type="button" aria-pressed="false" aria-label="صوت الطبيعة"><svg viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18V6L7.5 9.5Z"/><path class="w" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/><path class="x" d="m16 10 4 4m0-4-4 4"/></svg></button>
   </div>
 </div>
 
@@ -733,31 +733,98 @@ const go=document.getElementById('go');
 ['pointerenter','focus'].forEach(ev=>go.addEventListener(ev,()=>valley.startHoverTransition()));
 ['pointerleave','blur'].forEach(ev=>go.addEventListener(ev,()=>valley.stopHoverTransition()));
 
-/* ===== ambient sound (starts only on tap) ===== */
+/* ===== nature sound (no music) + a small girl's voice saying the English letters and "ياسمين"; starts only on tap ===== */
 (function(){
   const btn=document.getElementById('sound');
-  let ac=null,master=null,lp=null,timer=0,on=false;
-  const notes=[523.25,587.33,659.25,783.99,880,1046.5];
+  let ac=null,master=null,lp=null,cricketG=null,on=false,birdT=0,speechT=0,idx=0,muffleT=0;
+  btn.setAttribute('aria-label','صوت الطبيعة وصوت طفلة تنطق الحروف');
+  const NAMES=['ay','bee','see','dee','ee','eff','jee','aitch','eye','jay','kay','el','em','en','oh','pee','cue','are','ess','tee','you','vee','double you','ex','why','zee'];
+  const SEQ=[];
+  NAMES.forEach((n,i)=>{SEQ.push({t:n,ar:false});if((i+1)%7===0)SEQ.push({t:'ياسمين',ar:true})});
+  SEQ.push({t:'ياسمين',ar:true});
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  function noiseBuf(sec,pink){
+    const n=ac.sampleRate*sec,b=ac.createBuffer(1,n,ac.sampleRate),d=b.getChannelData(0);
+    let b0=0,b1=0,b2=0;
+    for(let i=0;i<n;i++){const w=Math.random()*2-1;if(pink){b0=.99765*b0+w*.099;b1=.963*b1+w*.2965;b2=.57*b2+w*1.0526;d[i]=(b0+b1+b2+w*.1848)*.22}else d[i]=w}
+    return b;
+  }
+  function loopNoise(sec,pink){const s=ac.createBufferSource();s.buffer=noiseBuf(sec,pink);s.loop=true;s.start();return s}
+  function lfo(freq,depth,target){const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=freq;g.gain.value=depth;o.connect(g);g.connect(target);o.start();return o}
   function build(){
     const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;
-    ac=new AC();master=ac.createGain();master.gain.value=0;lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=4200;
+    ac=new AC();master=ac.createGain();master.gain.value=0;lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=9000;
     master.connect(lp);lp.connect(ac.destination);
-    [130.81,196,261.63].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f;o.detune.value=i*4;g.gain.value=.05;o.connect(g);g.connect(master);o.start()});
-    const l=ac.createOscillator(),lg=ac.createGain();l.frequency.value=.12;lg.gain.value=.25;l.connect(lg);lg.connect(master.gain);l.start();
-    setInterval(()=>{const D=window.__yasminaMuffle?window.__yasminaMuffle():0;lp.frequency.setTargetAtTime(4200-D*3600,ac.currentTime,.25)},120);
-    return true}
-  function chime(){
+    // wind: slow-moving band-passed noise
+    const wf=ac.createBiquadFilter();wf.type='bandpass';wf.frequency.value=420;wf.Q.value=.6;
+    const wg=ac.createGain();wg.gain.value=.11;
+    loopNoise(4,true).connect(wf);wf.connect(wg);wg.connect(master);
+    lfo(.07,.07,wg.gain);lfo(.05,160,wf.frequency);
+    // leaves and a little stream: bright noise with a gentle shimmer
+    const hf=ac.createBiquadFilter();hf.type='highpass';hf.frequency.value=1500;
+    const lf=ac.createBiquadFilter();lf.type='lowpass';lf.frequency.value=5200;
+    const sg=ac.createGain();sg.gain.value=.028;
+    loopNoise(3,false).connect(hf);hf.connect(lf);lf.connect(sg);sg.connect(master);
+    lfo(.31,.012,sg.gain);lfo(.9,.006,sg.gain);
+    // crickets for the night: a high tone switched on and off very fast
+    const co=ac.createOscillator(),cg=ac.createGain();co.frequency.value=4300;cg.gain.value=0;
+    co.connect(cg);lfo(31,.012,cg.gain);co.start();
+    cricketG=ac.createGain();cricketG.gain.value=0;cg.connect(cricketG);cricketG.connect(master);
+    lfo(2.6,.5,cricketG.gain);
+    muffleT=setInterval(()=>{
+      const D=window.__yasminaMuffle?window.__yasminaMuffle():0;
+      lp.frequency.setTargetAtTime(9000-D*7000,ac.currentTime,.25);
+      cricketG.gain.setTargetAtTime(valley.isNight()>.5?.5:0,ac.currentTime,.6);
+    },200);
+    return true;
+  }
+  function bird(){
     if(!on||!ac)return;
-    const f=notes[Math.floor(Math.random()*notes.length)],o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime;
-    o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.12,t+.02);g.gain.exponentialRampToValueAtTime(.0008,t+2.4);
-    o.connect(g);g.connect(master);o.start(t);o.stop(t+2.6);
-    timer=setTimeout(chime,1600+Math.random()*2600)}
+    if(valley.isNight()<.5){
+      const notes=2+Math.floor(Math.random()*3);let t=ac.currentTime+.02;const f0=rnd(2300,4300),gap=rnd(.09,.16);
+      for(let i=0;i<notes;i++){
+        const o=ac.createOscillator(),g=ac.createGain(),f=f0*rnd(.85,1.25),d=rnd(.07,.13);
+        o.type='sine';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*rnd(.7,1.5),t+d);
+        g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.05,t+.012);g.gain.exponentialRampToValueAtTime(.0008,t+d+.02);
+        o.connect(g);g.connect(master);o.start(t);o.stop(t+d+.04);t+=gap;
+      }
+    }
+    birdT=setTimeout(bird,rnd(1400,4800));
+  }
+  /* the little girl's voice: speech synthesis, raised in pitch; the voices come from the visitor's device */
+  const hasSpeech='speechSynthesis' in window&&'SpeechSynthesisUtterance' in window;
+  function pick(ar){
+    const vs=speechSynthesis.getVoices();if(!vs.length)return null;
+    if(ar){const v=vs.find(v=>/^ar/i.test(v.lang));if(v)return v}
+    const en=vs.filter(v=>/^en/i.test(v.lang));
+    return en.find(v=>/samantha|zira|aria|jenny|hazel|karen|susan|google us english|female/i.test(v.name))||en.find(v=>/US|GB/i.test(v.lang))||en[0]||null;
+  }
+  function say(){
+    if(!on||!hasSpeech)return;
+    const it=SEQ[idx%SEQ.length];idx++;
+    const arVoice=it.ar?pick(true):null;
+    const u=new SpeechSynthesisUtterance(it.ar&&!arVoice?'Yasmeen':it.t);
+    const v=arVoice||pick(false);
+    if(v){u.voice=v;u.lang=v.lang}else u.lang=it.ar?'ar-SA':'en-US';
+    u.pitch=1.9;u.rate=it.ar?.78:.72;u.volume=.55;
+    const next=()=>{speechT=setTimeout(say,it.ar?1100:700)};
+    u.onend=next;u.onerror=next;
+    try{speechSynthesis.speak(u)}catch(e){next()}
+  }
   btn.addEventListener('click',()=>{
     if(!ac&&!build())return;
     if(ac.state==='suspended')ac.resume();
     on=!on;btn.setAttribute('aria-pressed',String(on));
-    master.gain.cancelScheduledValues(ac.currentTime);master.gain.setTargetAtTime(on?.5:0,ac.currentTime,.6);
-    clearTimeout(timer);if(on)timer=setTimeout(chime,500)})
+    master.gain.cancelScheduledValues(ac.currentTime);master.gain.setTargetAtTime(on?1:0,ac.currentTime,.8);
+    clearTimeout(birdT);clearTimeout(speechT);
+    if(hasSpeech)speechSynthesis.cancel();
+    if(on){birdT=setTimeout(bird,900);speechT=setTimeout(say,1200)}
+  });
+  document.addEventListener('visibilitychange',()=>{
+    if(!ac||!on)return;
+    if(document.hidden){ac.suspend();if(hasSpeech)speechSynthesis.pause()}
+    else{ac.resume();if(hasSpeech)speechSynthesis.resume()}
+  });
 })();
 
 /* ===== sheet: lessons info and booking ===== */
