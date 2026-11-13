@@ -32,7 +32,9 @@ export default {
       try {
         return await handler({ request, env });
       } catch (e) {
-        return fail('حدث خطأ في الخادم. حاول مرة أخرى.', 500);
+        console.error('api error', request.method, pathname, e && (e.stack || e.message || e));
+        const detail = pathname.startsWith('/api/admin/') ? ' (' + String((e && e.message) || e).slice(0, 160) + ')' : '';
+        return fail('حدث خطأ في الخادم. حاول مرة أخرى.' + detail, 500);
       }
     }
     return env.ASSETS.fetch(request);

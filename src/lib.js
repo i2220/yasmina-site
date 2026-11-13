@@ -98,11 +98,15 @@ async function migrate(db) {
     ['lessons_done', 'INTEGER NOT NULL DEFAULT 0'],
     ['next_follow', "TEXT NOT NULL DEFAULT ''"],
   ];
+  // Look at what the table already has and add only the missing columns (no reliance on error wording).
+  const info = await db.prepare('PRAGMA table_info(bookings)').all();
+  const have = new Set((info.results || []).map((r) => r.name));
   for (const [name, def] of cols) {
+    if (have.has(name)) continue;
     try {
       await db.prepare(`ALTER TABLE bookings ADD COLUMN ${name} ${def}`).run();
     } catch (e) {
-      if (!/duplicate column/i.test(String(e && e.message))) throw e;
+      if (!/duplicate column|already exists/i.test(String(e && (e.message || e.cause))) ) throw e;
     }
   }
 }
