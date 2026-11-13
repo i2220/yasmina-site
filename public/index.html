@@ -147,6 +147,21 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cream);outline-o
   .why,.levels,.steps,.row{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){.loader span{animation:none}}
+/* confirmation */
+.done{width:100%;min-width:0;max-width:100%;text-align:center;justify-items:center}
+.okmark svg{width:92px;height:92px;fill:none;stroke:var(--cream);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.okmark circle{stroke-dasharray:151;stroke-dashoffset:151;animation:draw .8s ease forwards}
+.okmark path{stroke-dasharray:44;stroke-dashoffset:44;animation:draw .5s .6s ease forwards}
+.okmark.warn svg{stroke:#ffb24d}
+@keyframes draw{to{stroke-dashoffset:0}}
+.done .lead{max-width:30em;font-size:19px;font-weight:600;color:var(--ink)}
+.ticket{box-sizing:border-box;max-width:100%;display:grid;gap:4px;justify-items:center;padding:20px 34px;border-radius:24px;border:2px dashed var(--cream);background:rgba(255,229,0,.08);min-width:min(100%,320px)}
+.ticket small{font-weight:700;color:var(--muted)}
+.ticket b{font-weight:900;font-size:clamp(34px,8vw,48px);letter-spacing:.12em;color:var(--cream);font-variant-numeric:tabular-nums}
+.recap{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;width:100%;text-align:right}
+.recap div{padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:var(--panel)}
+.recap dt{font-size:13px;color:var(--muted)}.recap dd{font-weight:700;overflow-wrap:anywhere}
+.done .btns{justify-content:center}
 /* teacher */
 .tch{display:grid;gap:clamp(18px,3vw,28px)}
 .tch-head{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
@@ -353,17 +368,26 @@ em{font-style:normal;color:var(--muted);font-weight:500;font-size:14px}
           <div class="wiz">
             <button class="ghost" id="back" type="button" hidden>السابق</button>
             <button class="btn" id="next" type="button">التالي</button>
-            <button class="btn" id="submit" type="submit" hidden>أرسل طلب الحجز</button>
+            <button class="btn" id="submit" type="submit" hidden>تأكيد الحجز</button>
           </div>
           <p class="note">نتواصل معك على واتساب لتأكيد الموعد وإرسال رابط زووم. لا ندفع شيئًا الآن.</p>
         </form>
         <div class="done" id="done" hidden>
-          <h4 id="doneTitle">وصلنا طلب الحجز</h4>
-          <div class="summary" id="summary"></div>
+          <div class="okmark" id="okmark" aria-hidden="true"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M15 27l8 8 15-17"/></svg></div>
+          <h4 id="doneTitle">تم تأكيد الحجز</h4>
+          <p class="lead" id="doneLead">شكرًا لك! سوف نتواصل معك قريبًا لاستكمال الحجز.</p>
+          <div class="ticket" id="ticket">
+            <small>رقم الحجز</small>
+            <b id="code" dir="ltr">YS-0000</b>
+            <button class="ghost" id="copyCode" type="button">نسخ الرقم</button>
+          </div>
+          <dl class="recap" id="recap"></dl>
+          <p class="note">احتفظ برقم الحجز، وأرسله لنا عند التواصل لتسريع الخدمة.</p>
+          <div class="summary" id="summary" hidden></div>
           <div class="btns">
             <a class="btn" id="wa" href="#" target="_blank" rel="noopener" hidden>راسلنا على واتساب</a>
-            <button class="ghost" id="copy" type="button">انسخ الطلب</button>
-            <button class="ghost" id="edit" type="button">طلب جديد</button>
+            <button class="ghost" id="copy" type="button">انسخ تفاصيل الطلب</button>
+            <button class="ghost" id="edit" type="button">حجز جديد</button>
           </div>
           <p class="note" id="copyNote" aria-live="polite"></p>
         </div>
@@ -393,7 +417,7 @@ const valley=(function(){
     DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;
     cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
     mobile=W<=820;
-    if(mobile){R=Math.min(W*.4,H*.19);CX=W*.5;CY=H*.74}else{R=Math.min(W*.19,H*.345);CX=W*.26;CY=H*.52}
+    if(mobile){R=Math.min(W*.5,H*.25);CX=W*.5;CY=H*.7}else{R=Math.min(W*.22,H*.4);CX=W*.26;CY=H*.54}
   }
   addEventListener('resize',resize);resize();
 
@@ -590,7 +614,7 @@ const ORB=(()=>{const c=mkc(64),g=c.getContext('2d'),m=32,gl=g.createRadialGradi
 
   /* ---------- the bouquet ---------- */
   const parts=[];
-  const N=mobile?1050:2500;
+  const N=mobile?560:1250;
   const R0=(a,b)=>a+Math.random()*(b-a);
   for(let i=0;i<N;i++){
     const y=1-2*(i+.5)/N,rr=Math.sqrt(1-y*y),th=i*2.399963;
@@ -730,7 +754,7 @@ const ORB=(()=>{const c=mkc(64),g=c.getContext('2d'),m=32,gl=g.createRadialGradi
       }
       p.vx+=-p.ox*K*dt;p.vy+=-p.oy*K*dt;const dm=Math.exp(-C*dt);p.vx*=dm;p.vy*=dm;
       p.ox+=p.vx*dt;p.oy+=p.vy*dt;p.rot+=(p.spin+p.sv)*dt;p.sv*=Math.exp(-1.5*dt);
-      const base=p.kind==='f'?.135:p.kind==='b'?.1:p.kind==='v'?.17:.14;
+      const base=p.kind==='f'?.064:p.kind==='b'?.05:p.kind==='v'?.085:.07;
       p.sz=R*base*p.s*per*(.2+.8*bl)*(1-E*.45);
       p.sx=sx+p.ox;p.sy=sy+p.oy;
       p.vis=bl>0.02;
@@ -1108,7 +1132,7 @@ const go=document.getElementById('go');
     try{
       const r=await fetch('/api/book',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),signal:c.signal});
       const j=await r.json().catch(()=>null);
-      if(r.ok&&j&&j.ok)return{ok:true};
+      if(r.ok&&j&&j.ok)return{ok:true,id:j.id};
       if(r.status===400&&j&&j.error)return{ok:false,validation:j.error};
       return{ok:false};
     }catch(e){return{ok:false}}finally{clearTimeout(tm)}
@@ -1136,22 +1160,32 @@ const go=document.getElementById('go');
     submit.disabled=false;submit.textContent=label;
     if(res.validation){err.textContent=res.validation;return}
     summary.textContent=msg;
+    const okm=$('okmark');
     if(res.ok){
-      $('doneTitle').textContent='وصلنا طلب الحجز';
-      note.textContent='سنتواصل معك على واتساب لتأكيد الموعد وإرسال رابط زووم.';
+      const code=res.id?'YS-'+String(1000+Number(res.id)):'YS-'+Date.now().toString(36).slice(-5).toUpperCase();
+      $('code').textContent=code;$('ticket').hidden=false;okm.classList.remove('warn');
+      $('doneTitle').textContent='تم تأكيد الحجز';
+      $('doneLead').textContent='شكرًا لك! سوف نتواصل معك قريبًا لاستكمال الحجز.';
+      msg+='\nرقم الحجز: '+code;
+      note.textContent='';
       wa.textContent='راسلنا على واتساب';
+      const rc=$('recap');rc.textContent='';
+      [['الطفل',payload.child],['الصف',payload.grade],['الباقة',plan||payload.kind],['الأيام',payload.days.join('، ')],['الأوقات',payload.times.join('، ')]].forEach(([k,v])=>{const d=document.createElement('div');const t=document.createElement('dt');t.textContent=k;const dd=document.createElement('dd');dd.textContent=v;d.append(t,dd);rc.append(d)});
     }else{
+      $('ticket').hidden=true;$('recap').textContent='';okm.classList.add('warn');
       $('doneTitle').textContent='الطلب جاهز، أرسله لنا';
-      note.textContent='تعذّر الإرسال من الصفحة. انسخ الطلب أو أرسله لنا مباشرة على واتساب.';
+      $('doneLead').textContent='تعذّر الإرسال من الصفحة. أرسل الطلب لنا على واتساب ليكتمل الحجز.';
+      note.textContent='يمكنك أيضًا نسخ تفاصيل الطلب.';
       wa.textContent='أرسل عبر واتساب';
     }
     if(WHATSAPP){wa.hidden=false;wa.href='https://wa.me/'+WHATSAPP+'?text='+encodeURIComponent(msg)}else wa.hidden=true;
-    form.hidden=true;done.hidden=false;done.scrollIntoView({block:'center'});
+    form.hidden=true;done.hidden=false;const om=$('okmark');om.innerHTML=om.innerHTML;done.scrollIntoView({block:'center'});
   });
   copyBtn.addEventListener('click',async()=>{
     try{await navigator.clipboard.writeText(msg);note.textContent='تم نسخ الطلب.'}
     catch(_){const r=document.createRange();r.selectNodeContents(summary);const s=getSelection();s.removeAllRanges();s.addRange(r);note.textContent='حدّدنا النص لك. انسخه بالضغط المطوّل أو Ctrl+C.'}
   });
+  $('copyCode').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('code').textContent);$('copyCode').textContent='تم النسخ'}catch(_){}setTimeout(()=>{$('copyCode').textContent='نسخ الرقم'},1800)});
   $('edit').addEventListener('click',()=>{
     done.hidden=true;form.hidden=false;form.reset();renderPlans();go(1);$('child').focus();
   });

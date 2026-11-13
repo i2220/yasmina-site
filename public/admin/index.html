@@ -441,7 +441,7 @@ details.more summary{cursor:pointer;font-weight:700;color:var(--blue);padding-bl
   function filtered(){
     const q=$('q').value.trim().toLowerCase(),st=$('statusFilter').value,ty=$('typeFilter').value,py=$('payFilter').value,gr=$('gradeFilter').value;
     return all.filter(b=>(!st||b.status===st)&&(!ty||(ty==='trial')===isTrial(b))&&(!py||b.pay_status===py)&&(!gr||b.grade===gr)&&
-      (!q||(b.child+' '+b.parent+' '+b.phone).toLowerCase().includes(q)));
+      (!q||(b.child+' '+b.parent+' '+b.phone+' YS-'+(1000+b.id)).toLowerCase().includes(q)));
   }
   function openZoomForm(b,box,btn){
     if(settings&&settings.zoomConfigured===false){toast('زووم غير مربوط بعد. أضف بيانات الربط ثم جرّب.',true);tab('settings');return}
@@ -470,7 +470,7 @@ details.more summary{cursor:pointer;font-weight:700;color:var(--blue);padding-bl
   function card(b){
     const c=el('article','card');
     const top=el('div','card-top');
-    const h=el('h3','',b.child);h.append(el('small','',b.grade+(b.age?' · '+b.age+' سنوات':'')));
+    const h=el('h3','',b.child);h.append(el('small','',b.grade+(b.age?' · '+b.age+' سنوات':'')+' · YS-'+(1000+b.id)));
     const right=el('div');right.append(el('span','badge b-'+b.status,STATUS[b.status]||b.status),el('div','when',fmtDate(b.created_at)));
     top.append(h,right);
     const tags=el('div');
