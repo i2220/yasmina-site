@@ -105,6 +105,46 @@ fieldset{border:0;min-width:0}legend{font-weight:700;font-size:15px;margin-botto
   .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
   .grid2{grid-template-columns:1fr}
 }
+
+/* more tabs */
+.tabs{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.tab{white-space:nowrap;flex:none;position:relative}
+.tab .dot{display:inline-block;min-width:20px;height:20px;padding:0 6px;margin-inline-start:8px;border-radius:99px;background:var(--bad);color:#190500;font-size:12px;font-weight:800;line-height:20px;text-align:center}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding-block:12px}
+.kpi{padding:14px 16px;border-radius:18px;border:1px solid var(--line);background:var(--panel);display:grid}
+.kpi b{font-weight:900;font-size:30px;line-height:1.2;color:var(--yellow);font-variant-numeric:tabular-nums}
+.kpi span{font-weight:600;font-size:14px;color:var(--muted)}
+.kpi small{font-size:12px;color:var(--muted)}
+.panel{border:1px solid var(--line);border-radius:22px;background:var(--panel);padding:16px 20px;display:grid;gap:10px;min-width:0}
+.panel h2{font-weight:800;font-size:18px;color:var(--yellow)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;padding-block:6px}
+.chart{display:flex;align-items:flex-end;gap:4px;height:130px;padding-top:8px}
+.chart div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%;min-width:0}
+.chart i{display:block;width:100%;background:var(--yellow);border-radius:6px 6px 0 0;min-height:2px}
+.chart small{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+.chart em{font-style:normal;font-size:11px;font-weight:700}
+.bars{display:grid;gap:8px}
+.bar{display:grid;grid-template-columns:minmax(80px,38%) 1fr auto;gap:10px;align-items:center;font-size:14px}
+.bar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar u{display:block;height:10px;border-radius:99px;background:rgba(255,229,0,.14);text-decoration:none;overflow:hidden}
+.bar u i{display:block;height:100%;background:var(--gold);border-radius:99px}
+.bar b{font-variant-numeric:tabular-nums;min-width:2ch;text-align:left}
+.day{font-weight:800;font-size:17px;color:var(--yellow);padding-block:10px 4px}
+.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;border:1px solid var(--line);border-radius:18px;background:var(--panel)}
+.row .grow{flex:1 1 200px;min-width:0}
+.row b{font-weight:800}
+.tag{display:inline-flex;align-items:center;min-height:24px;padding:0 10px;border-radius:99px;font-size:12px;font-weight:700;border:1px solid currentColor;margin-inline-end:6px}
+.t-trial{color:var(--blue)}.t-paid{color:var(--ok)}.t-partial{color:var(--warn)}.t-unpaid{color:var(--bad)}.t-late{color:var(--bad)}
+.edit{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px 12px;padding:12px 14px;border-radius:14px;background:rgba(255,229,0,.05)}
+.edit label{display:grid;gap:2px;font-size:12px;color:var(--muted)}
+.edit input,.edit select{min-height:38px;font-size:14px;padding:2px 10px}
+details.more summary{cursor:pointer;font-weight:700;color:var(--blue);padding-block:4px}
+.rep{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
+.rep input{min-height:40px}
+.help{font-size:13px;color:var(--muted)}
+.sumrow{display:flex;gap:18px;flex-wrap:wrap;font-weight:700}
+.sumrow span small{color:var(--muted);font-weight:600;margin-inline-start:4px}
+@media (max-width:720px){.bar{grid-template-columns:90px 1fr auto}.rep{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -133,31 +173,98 @@ fieldset{border:0;min-width:0}legend{font-weight:700;font-size:15px;margin-botto
 
   <!-- dashboard -->
   <main id="appView" hidden>
-    <div class="tabs" role="tablist">
-      <button class="tab" role="tab" id="tabBookings" aria-selected="true" type="button">الحجوزات</button>
-      <button class="tab" role="tab" id="tabSettings" aria-selected="false" type="button">إعدادات الموقع</button>
-    </div>
+    <div class="tabs" role="tablist" id="tabs"></div>
 
-    <section id="paneBookings">
+    <section id="pane-overview" data-pane hidden>
+      <div class="kpis" id="kpis"></div>
+      <div class="cols">
+        <div class="panel"><h2>الطلبات في آخر 14 يومًا</h2><div class="chart" id="chart"></div></div>
+        <div class="panel"><h2>الأكثر طلبًا</h2><div id="demand" class="bars"></div></div>
+      </div>
+      <div class="cols">
+        <div class="panel"><h2>الصفوف</h2><div id="byGrade" class="bars"></div></div>
+        <div class="panel"><h2>مستوى الأطفال</h2><div id="byLevel" class="bars"></div></div>
+        <div class="panel"><h2>كيف عرفوا عنا</h2><div id="bySource" class="bars"></div></div>
+        <div class="panel"><h2>الدول</h2><div id="byTz" class="bars"></div></div>
+      </div>
+    </section>
+
+    <section id="pane-bookings" data-pane hidden>
       <div class="stats" id="stats"></div>
       <div class="tools">
         <input class="grow" id="q" type="search" placeholder="ابحث باسم الطفل أو ولي الأمر أو الرقم" aria-label="بحث">
-        <select id="statusFilter" aria-label="تصفية الحالة" style="width:auto">
-          <option value="">كل الحالات</option><option value="new">جديد</option><option value="confirmed">مؤكد</option><option value="done">تمت</option><option value="cancelled">ملغى</option>
-        </select>
+        <select id="statusFilter" aria-label="الحالة" style="width:auto"><option value="">كل الحالات</option><option value="new">جديد</option><option value="confirmed">مؤكد</option><option value="done">تمت</option><option value="cancelled">ملغى</option></select>
+        <select id="typeFilter" aria-label="النوع" style="width:auto"><option value="">تجريبي وغيره</option><option value="trial">حصة تجريبية</option><option value="paid">باقات فقط</option></select>
+        <select id="payFilter" aria-label="الدفع" style="width:auto"><option value="">كل المدفوعات</option><option value="unpaid">غير مدفوع</option><option value="partial">مدفوع جزئيًا</option><option value="paid">مدفوع</option></select>
+        <select id="gradeFilter" aria-label="الصف" style="width:auto"></select>
         <button class="ghost" id="refresh" type="button">تحديث</button>
         <button class="ghost" id="csv" type="button">تصدير Excel</button>
       </div>
       <div class="list" id="list" aria-live="polite"></div>
     </section>
 
-    <section id="paneSettings" hidden>
+    <section id="pane-schedule" data-pane hidden>
+      <p class="hint" style="padding-block:8px">الحصص التي أُنشئ لها اجتماع زووم، مرتبة بالتاريخ. أرسل التذكير بضغطة.</p>
+      <div class="list" id="schedule"></div>
+    </section>
+
+    <section id="pane-follow" data-pane hidden>
+      <p class="hint" style="padding-block:8px">طلبات جديدة مرّ عليها أكثر من 24 ساعة دون رد، وحجوزات حان موعد متابعتها.</p>
+      <div class="list" id="follow"></div>
+    </section>
+
+    <section id="pane-students" data-pane hidden>
+      <div class="tools"><input class="grow" id="sq" type="search" placeholder="ابحث في الطلاب" aria-label="بحث"></div>
+      <div class="list" id="students"></div>
+    </section>
+
+    <section id="pane-payments" data-pane hidden>
+      <div class="kpis" id="payKpis"></div>
+      <div class="tools"><button class="ghost" id="payCsv" type="button">تصدير المدفوعات</button></div>
+      <div class="list" id="payList"></div>
+    </section>
+
+    <section id="pane-messages" data-pane hidden>
+      <form class="form" id="msgForm">
+        <p class="hint">قوالب رسائل واتساب الجاهزة. المتغيرات: {parent} {child} {grade} {day} {time} {zoom}</p>
+        <div class="field"><label class="t" for="mConfirm">تأكيد الموعد</label><textarea id="mConfirm"></textarea></div>
+        <div class="field"><label class="t" for="mReminder">تذكير بالحصة</label><textarea id="mReminder"></textarea></div>
+        <div class="field"><label class="t" for="mFollow">متابعة طلب جديد</label><textarea id="mFollow"></textarea></div>
+        <div class="field"><label class="t" for="mCancel">إلغاء أو إعادة جدولة</label><textarea id="mCancel"></textarea></div>
+        <div class="field"><label class="t" for="mThanks">شكر بعد الحصة</label><textarea id="mThanks"></textarea></div>
+        <div class="err" id="msgErr" role="alert"></div>
+        <div><button class="btn" type="submit">حفظ القوالب</button></div>
+      </form>
+    </section>
+
+    <section id="pane-teacher" data-pane hidden>
+      <form class="form" id="teacherForm">
+        <div class="grid2">
+          <div class="field"><label class="t" for="tName">اسم المعلمة</label><input id="tName" type="text" maxlength="60"></div>
+          <div class="field"><label class="t" for="tTitle">المسمى</label><input id="tTitle" type="text" maxlength="80"></div>
+          <div class="field"><label class="t" for="tYears">سنوات الخبرة</label><input id="tYears" type="text" inputmode="numeric" dir="ltr" style="text-align:right"></div>
+          <div class="field"><label class="t" for="tCity">المدينة</label><input id="tCity" type="text" maxlength="40"></div>
+          <div class="field"><label class="t" for="tArea">المنطقة</label><input id="tArea" type="text" maxlength="40"></div>
+          <div class="field"><label class="t" for="tMap">موقع الخريطة (نص بحث جوجل)</label><input id="tMap" type="text" maxlength="120"></div>
+        </div>
+        <div class="field"><label class="t" for="tBio">نبذة عن المعلمة</label><textarea id="tBio" maxlength="700"></textarea></div>
+        <fieldset><legend>الإحصائيات المعروضة على الموقع (حتى 8)</legend><div class="list" id="statRows"></div><div style="padding-top:8px"><button class="ghost sm" id="addStat" type="button">إضافة إحصائية</button></div><p class="help">اكتب أرقامًا حقيقية فقط، مثل +10 أو 120 أو 1:1.</p></fieldset>
+        <fieldset><legend>الباقات (تظهر في نموذج الحجز)</legend>
+          <div class="grid2" style="padding-bottom:8px"><div class="field"><label class="t" for="tCur">العملة</label><input id="tCur" type="text" maxlength="8"></div></div>
+          <div class="list" id="planRows"></div><div style="padding-top:8px"><button class="ghost sm" id="addPlan" type="button">إضافة باقة</button></div>
+          <p class="help">الباقة ذات الحصة الواحدة والسعر صفر تُعدّ حصة تجريبية.</p></fieldset>
+        <div class="err" id="teacherErr" role="alert"></div>
+        <div><button class="btn" type="submit">حفظ</button></div>
+      </form>
+    </section>
+
+    <section id="pane-settings" data-pane hidden>
       <form class="form" id="settingsForm">
         <div class="grid2">
           <div class="field"><label class="t" for="sWhats">رقم واتساب للتواصل (بصيغة دولية)</label><input id="sWhats" type="tel" inputmode="numeric" dir="ltr" placeholder="96550000000" style="text-align:right"><span class="hint">يظهر زر واتساب للأهل بعد الحجز.</span></div>
           <div class="field"><label class="t" for="sCc">رمز الدولة الافتراضي</label><input id="sCc" type="text" inputmode="numeric" dir="ltr" placeholder="965" style="text-align:right"><span class="hint">يُضاف إلى أرقام الأهل المكتوبة بدونه.</span></div>
         </div>
-        <div class="field"><label class="t" for="sZoom">رابط اجتماع زووم</label><input id="sZoom" type="url" dir="ltr" placeholder="https://zoom.us/j/..." style="text-align:right"><span class="hint">رابط ثابت احتياطي لا يظهر للزوار. يُستخدم في رسالة التأكيد إذا لم تنشئ اجتماعًا خاصًا بالحجز.</span></div>
+        <div class="field"><label class="t" for="sZoom">رابط اجتماع زووم</label><input id="sZoom" type="url" dir="ltr" placeholder="https://zoom.us/j/..." style="text-align:right"><span class="hint">رابط ثابت احتياطي لا يظهر للزوار. يُستخدم في الرسائل إذا لم تنشئ اجتماعًا خاصًا بالحجز.</span></div>
         <div class="grid2">
           <div class="field"><label class="t" for="sHost">بريد حساب زووم الذي تُنشأ منه الاجتماعات</label><input id="sHost" type="text" inputmode="email" dir="ltr" placeholder="you@example.com" style="text-align:right"></div>
           <div class="field"><label class="t" for="sDur">مدة الحصة بالدقائق</label><input id="sDur" type="text" inputmode="numeric" dir="ltr" placeholder="40" style="text-align:right"></div>
@@ -166,7 +273,6 @@ fieldset{border:0;min-width:0}legend{font-weight:700;font-size:15px;margin-botto
         <div class="field"><label class="t" for="sAnn">إعلان قصير يظهر في الصفحة الرئيسية (اختياري)</label><input id="sAnn" type="text" maxlength="140" placeholder="مثال: خصم 20% على الحجز الأول"></div>
         <fieldset><legend>الأيام المتاحة للحجز</legend><div class="chips" id="sDays"></div></fieldset>
         <div class="field"><label class="t" for="sTimes">الأوقات المتاحة (وقت في كل سطر، بتوقيت الكويت)</label><textarea id="sTimes" dir="rtl" placeholder="3:00 م&#10;4:00 م"></textarea></div>
-        <div class="field"><label class="t" for="sTpl">نص رسالة تأكيد الموعد</label><textarea id="sTpl" style="min-height:140px"></textarea><span class="hint">يمكنك استخدام: {parent} {child} {grade} {day} {time} {zoom}</span></div>
         <div class="err" id="setErr" role="alert"></div>
         <div><button class="btn" id="saveSettings" type="submit">حفظ الإعدادات</button></div>
       </form>
@@ -179,8 +285,11 @@ fieldset{border:0;min-width:0}legend{font-weight:700;font-size:15px;margin-botto
 (function(){
   const $=id=>document.getElementById(id);
   const STATUS={new:'جديد',confirmed:'مؤكد',done:'تمت',cancelled:'ملغى'};
-  let settings=null,timer=0,debounce=0,bookings=[];
+  const PAYL={unpaid:'غير مدفوع',partial:'مدفوع جزئيًا',paid:'مدفوع'};
+  const TABS=[['overview','نظرة عامة'],['bookings','الحجوزات'],['schedule','الجدول'],['follow','المتابعة'],['students','الطلاب'],['payments','المدفوعات'],['messages','الرسائل'],['teacher','المعلمة والباقات'],['settings','الإعدادات']];
+  let settings=null,timer=0,all=[],cur='overview',allDays=[];
 
+  function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined&&text!==null)e.textContent=text;return e}
   function toast(msg,bad){const t=$('toast');t.textContent=msg;t.className='toast'+(bad?' bad':'');t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>{t.hidden=true},2800)}
   async function api(path,opt){
     const o=Object.assign({credentials:'same-origin',headers:{}},opt||{});
@@ -191,11 +300,11 @@ fieldset{border:0;min-width:0}legend{font-weight:700;font-size:15px;margin-botto
     if(!r.ok||!j||j.ok===false)throw new Error((j&&j.error)||'حدث خطأ غير متوقع.');
     return j;
   }
+  const patch=async(id,body,msg)=>{try{await api('/api/admin/bookings',{method:'PATCH',body:Object.assign({id},body)});toast(msg||'تم الحفظ');await loadBookings(true)}catch(e){toast(e.message,true)}};
 
-  /* ----- views ----- */
+  /* ----- views and tabs ----- */
   function showLogin(){clearInterval(timer);$('appView').hidden=true;$('hbtns').hidden=true;$('loginView').hidden=false;$('pw').focus()}
-  function showApp(){$('loginView').hidden=true;$('appView').hidden=false;$('hbtns').hidden=false;loadBookings();loadSettings();clearInterval(timer);timer=setInterval(()=>{if(!document.hidden&&!$('paneBookings').hidden&&document.activeElement.tagName!=='INPUT')loadBookings(true)},60000)}
-
+  function showApp(){$('loginView').hidden=true;$('appView').hidden=false;$('hbtns').hidden=false;buildTabs();loadSettings();loadBookings();clearInterval(timer);timer=setInterval(()=>{if(!document.hidden&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName))loadBookings(true)},60000)}
   $('loginForm').addEventListener('submit',async e=>{
     e.preventDefault();$('loginErr').textContent='';$('loginBtn').disabled=true;
     try{await api('/api/admin/login',{method:'POST',body:{password:$('pw').value}});$('pw').value='';showApp()}
@@ -204,25 +313,33 @@ fieldset{border:0;min-width:0}legend{font-weight:700;font-size:15px;margin-botto
   });
   $('logout').addEventListener('click',async()=>{try{await api('/api/admin/logout',{method:'POST'})}catch(e){}showLogin()});
 
-  function tab(which){
-    const b=which==='b';
-    $('tabBookings').setAttribute('aria-selected',String(b));$('tabSettings').setAttribute('aria-selected',String(!b));
-    $('paneBookings').hidden=!b;$('paneSettings').hidden=b;
+  function buildTabs(){
+    const box=$('tabs');box.textContent='';
+    TABS.forEach(([k,l])=>{const b=el('button','tab',l);b.type='button';b.role='tab';b.id='tab-'+k;b.setAttribute('aria-selected',String(k===cur));b.addEventListener('click',()=>tab(k));box.append(b)});
+    tab(cur);
   }
-  $('tabBookings').addEventListener('click',()=>tab('b'));
-  $('tabSettings').addEventListener('click',()=>tab('s'));
+  function tab(k){
+    cur=k;
+    TABS.forEach(([x])=>{$('tab-'+x).setAttribute('aria-selected',String(x===k));$('pane-'+x).hidden=x!==k});
+    render();
+  }
+  function badge(k,n){const t=$('tab-'+k);if(!t)return;let d=t.querySelector('.dot');if(!n){if(d)d.remove();return}if(!d){d=el('span','dot');t.append(d)}d.textContent=n}
 
-  /* ----- bookings ----- */
-  const fmtDate=s=>{try{return new Intl.DateTimeFormat('ar-KW-u-nu-latn',{timeZone:'Asia/Kuwait',dateStyle:'medium',timeStyle:'short'}).format(new Date(s.replace(' ','T')+'Z'))}catch(e){return s}};
-  /* when the class happens: the Zoom slot if there is one, otherwise what the parent asked for */
+  /* ----- helpers ----- */
+  const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+  const addDays=(n)=>{const d=new Date();d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+  const ts=s=>new Date(String(s).replace(' ','T')+'Z').getTime();
+  const hoursOld=b=>(Date.now()-ts(b.created_at))/36e5;
+  const fmtDate=s=>{try{return new Intl.DateTimeFormat('ar-KW-u-nu-latn',{timeZone:'Asia/Kuwait',dateStyle:'medium',timeStyle:'short'}).format(new Date(ts(s)))}catch(e){return s}};
+  const money=n=>(Math.round((Number(n)||0)*100)/100).toLocaleString('en-US')+' '+((settings&&settings.currency)||'');
   function slot(b){
     const m=(b.zoom_start||'').match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/);
     if(m){
       const day=new Intl.DateTimeFormat('ar',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'}).format(new Date(Date.UTC(+m[1],+m[2]-1,+m[3])));
       const h=+m[4];
-      return {day,time:((h+11)%12+1)+':'+m[5]+' '+(h<12?'ص':'م')};
+      return {day,time:((h+11)%12+1)+':'+m[5]+' '+(h<12?'ص':'م'),date:m[1]+'-'+m[2]+'-'+m[3]};
     }
-    return {day:b.days.join('، '),time:b.times.join('، ')};
+    return {day:b.days.join('، '),time:b.times.join('، '),date:''};
   }
   const DAYIDX={'الأحد':0,'الاثنين':1,'الثلاثاء':2,'الأربعاء':3,'الخميس':4,'الجمعة':5,'السبت':6};
   function defaultDate(b){
@@ -237,8 +354,97 @@ fieldset{border:0;min-width:0}legend{font-weight:700;font-size:15px;margin-botto
     let h=+m[1]%12;if(m[3]==='م')h+=12;
     return String(h).padStart(2,'0')+':'+m[2];
   }
+  function phoneOf(b){
+    const s=settings||{};let d=String(b.phone).replace(/\D/g,'').replace(/^00/,'');
+    const cc=(s.countryCode||'').replace(/\D/g,'');
+    if(cc&&d.length<=8)d=cc+d;
+    return d;
+  }
+  function fill(tpl,b){
+    const s=settings||{},w=slot(b);
+    return String(tpl||'').replace(/\{parent\}/g,b.parent).replace(/\{child\}/g,b.child).replace(/\{grade\}/g,b.grade)
+      .replace(/\{day\}/g,w.day).replace(/\{time\}/g,w.time).replace(/\{zoom\}/g,b.zoom_link||s.zoomLink||'(أنشئ رابط زووم لهذا الحجز أولًا)');
+  }
+  const TPL={confirm:'confirmTemplate',reminder:'reminderTemplate',follow:'followTemplate',cancel:'cancelTemplate',thanks:'thanksTemplate'};
+  const TPLN={confirm:'تأكيد الموعد',reminder:'تذكير بالحصة',follow:'متابعة',cancel:'إلغاء / إعادة جدولة',thanks:'شكر بعد الحصة'};
+  function waLink(b,kind){return 'https://wa.me/'+phoneOf(b)+'?text='+encodeURIComponent(fill((settings||{})[TPL[kind]],b))}
+  function waBtn(b,kind,label,cls){const a=el('a',cls||'btn sm',label||TPLN[kind]);a.href=waLink(b,kind);a.target='_blank';a.rel='noopener';return a}
+  function isTrial(b){return !!b.trial||/تجريب/.test(b.plan||'')}
+  const needsFollow=b=>b.status!=='cancelled'&&b.status!=='done'&&((b.status==='new'&&hoursOld(b)>24)||(b.next_follow&&b.next_follow<=today()));
+
+  /* ----- data ----- */
+  async function loadBookings(quiet){
+    try{const j=await api('/api/admin/bookings');all=j.bookings;badge('follow',all.filter(needsFollow).length);badge('bookings',all.filter(b=>b.status==='new').length);render()}
+    catch(e){if(!quiet)toast(e.message,true)}
+  }
+  async function loadSettings(){
+    try{
+      const j=await api('/api/admin/settings');settings=j.settings;settings.zoomConfigured=j.zoomConfigured;allDays=j.allDays;
+      $('sWhats').value=settings.whatsapp||'';$('sCc').value=settings.countryCode||'';$('sZoom').value=settings.zoomLink||'';
+      $('sAnn').value=settings.announcement||'';$('sHost').value=settings.zoomHostEmail||'';$('sDur').value=settings.zoomDuration||40;
+      $('zoomStatus').textContent=j.zoomConfigured?'ربط زووم مفعّل. أنشئ الاجتماعات من بطاقة كل حجز.':'ربط زووم غير مفعّل. أضف ZOOM_ACCOUNT_ID وZOOM_CLIENT_ID وZOOM_CLIENT_SECRET كأسرار في Cloudflare، والخطوات في ملف README.';
+      $('sTimes').value=(settings.times||[]).join('\n');
+      const box=$('sDays');box.textContent='';
+      j.allDays.forEach(d=>{const l=el('label','chip');const i=el('input');i.type='checkbox';i.value=d;i.checked=(settings.days||[]).includes(d);l.append(i,el('span','',d));box.append(l)});
+      $('mConfirm').value=settings.confirmTemplate||'';$('mReminder').value=settings.reminderTemplate||'';$('mFollow').value=settings.followTemplate||'';$('mCancel').value=settings.cancelTemplate||'';$('mThanks').value=settings.thanksTemplate||'';
+      fillTeacher();render();
+    }catch(e){toast(e.message,true)}
+  }
+  async function saveSettings(body,errBox,okMsg){
+    errBox.textContent='';
+    try{const j=await api('/api/admin/settings',{method:'PUT',body});const zc=settings&&settings.zoomConfigured;settings=j.settings;settings.zoomConfigured=zc;toast(okMsg||'تم الحفظ');render();return true}
+    catch(err){errBox.textContent=err.message;toast(err.message,true);return false}
+  }
+
+  /* ----- render dispatcher ----- */
+  function render(){
+    if(!$('appView')||$('appView').hidden)return;
+    ({overview:rOverview,bookings:rBookings,schedule:rSchedule,follow:rFollow,students:rStudents,payments:rPayments}[cur]||(()=>{}))();
+  }
+
+  /* ----- overview ----- */
+  function bars(box,map,max){
+    box.textContent='';
+    const rows=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    if(!rows.length){box.append(el('div','hint','لا توجد بيانات بعد.'));return}
+    const m=max||Math.max(...rows.map(r=>r[1]));
+    rows.forEach(([k,n])=>{const r=el('div','bar');const u=el('u');const i=el('i');i.style.width=Math.max(4,n/m*100)+'%';u.append(i);r.append(el('span','',k),u,el('b','',n));box.append(r)});
+  }
+  function rOverview(){
+    const total=all.length,by=s=>all.filter(b=>b.status===s).length;
+    const conv=total?Math.round((by('confirmed')+by('done'))/total*100):0;
+    const revenue=all.reduce((s,b)=>s+(b.pay_status==='unpaid'?0:Number(b.amount)||0),0);
+    const due=all.filter(b=>b.pay_status!=='paid'&&Number(b.amount)>0).length;
+    const wk=all.filter(b=>Date.now()-ts(b.created_at)<7*864e5).length;
+    const k=$('kpis');k.textContent='';
+    [['الطلبات',total,wk+' هذا الأسبوع'],['جديدة',by('new'),'بانتظار الرد'],['تحتاج متابعة',all.filter(needsFollow).length,''],['مؤكدة',by('confirmed'),''],['نسبة التحويل',conv+'%','من الطلبات إلى حجوزات'],['حصص تجريبية',all.filter(isTrial).length,''],['الإيراد المحصّل',money(revenue),due?due+' مدفوعات معلّقة':'']]
+      .forEach(([l,v,s])=>{const d=el('div','kpi');d.append(el('b','',v),el('span','',l));if(s)d.append(el('small','',s));k.append(d)});
+    const days=[];for(let i=13;i>=0;i--)days.push(addDays(-i));
+    const cnt=Object.fromEntries(days.map(d=>[d,0]));
+    all.forEach(b=>{const d=new Date(ts(b.created_at));const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(key in cnt)cnt[key]++});
+    const mx=Math.max(1,...Object.values(cnt));const ch=$('chart');ch.textContent='';
+    days.forEach(d=>{const c=el('div');c.title=d+': '+cnt[d];const n=el('em','',cnt[d]||'');const i=el('i');i.style.height=(cnt[d]/mx*88)+'px';c.append(n,i,el('small','',d.slice(8)));ch.append(c)});
+    const dem={};all.forEach(b=>{b.days.forEach(d=>dem[d]=(dem[d]||0)+1);b.times.forEach(t=>dem[t]=(dem[t]||0)+1)});bars($('demand'),dem);
+    const cc=f=>{const m={};all.forEach(b=>{const v=f(b);if(v)m[v]=(m[v]||0)+1});return m};
+    bars($('byGrade'),cc(b=>b.grade));bars($('byLevel'),cc(b=>b.level));bars($('bySource'),cc(b=>b.source));bars($('byTz'),cc(b=>b.tz));
+  }
+
+  /* ----- bookings ----- */
+  function renderStats(){
+    const box=$('stats');box.textContent='';const curS=$('statusFilter').value;
+    [['new','جديد'],['confirmed','مؤكد'],['done','تمت'],['cancelled','ملغى']].forEach(([k,l])=>{
+      const b=el('button','stat s-'+k);b.type='button';b.setAttribute('aria-pressed',String(curS===k));
+      b.append(el('b','',all.filter(x=>x.status===k).length),el('span','',l));
+      b.addEventListener('click',()=>{$('statusFilter').value=curS===k?'':k;rBookings()});box.append(b);
+    });
+  }
+  function filtered(){
+    const q=$('q').value.trim().toLowerCase(),st=$('statusFilter').value,ty=$('typeFilter').value,py=$('payFilter').value,gr=$('gradeFilter').value;
+    return all.filter(b=>(!st||b.status===st)&&(!ty||(ty==='trial')===isTrial(b))&&(!py||b.pay_status===py)&&(!gr||b.grade===gr)&&
+      (!q||(b.child+' '+b.parent+' '+b.phone).toLowerCase().includes(q)));
+  }
   function openZoomForm(b,box,btn){
-    if(settings&&settings.zoomConfigured===false){toast('زووم غير مربوط بعد. أضف بيانات الربط ثم جرّب.',true);tab('s');return}
+    if(settings&&settings.zoomConfigured===false){toast('زووم غير مربوط بعد. أضف بيانات الربط ثم جرّب.',true);tab('settings');return}
     btn.hidden=true;
     const f=el('form','zform');
     const field=(label,input)=>{const w=el('label','zf');w.append(el('span','hint',label),input);return w};
@@ -251,120 +457,221 @@ fieldset{border:0;min-width:0}legend{font-weight:700;font-size:15px;margin-botto
     f.append(field('التاريخ',d),field('الساعة (بتوقيت الكويت)',t),field('المدة بالدقائق',n),ok,no);
     f.addEventListener('submit',async e=>{
       e.preventDefault();ok.disabled=true;ok.textContent='جارٍ الإنشاء…';
-      try{
-        await api('/api/admin/zoom',{method:'POST',body:{id:b.id,date:d.value,time:t.value,duration:Number(n.value)}});
-        toast('تم إنشاء رابط زووم وتأكيد الحجز');loadBookings(true);
-      }catch(err){toast(err.message,true);ok.disabled=false;ok.textContent='إنشاء الاجتماع'}
+      try{await api('/api/admin/zoom',{method:'POST',body:{id:b.id,date:d.value,time:t.value,duration:Number(n.value)}});toast('تم إنشاء رابط زووم وتأكيد الحجز');loadBookings(true)}
+      catch(err){toast(err.message,true);ok.disabled=false;ok.textContent='إنشاء الاجتماع'}
     });
     box.append(f);d.focus();
   }
-  function waLink(b){
-    const s=settings||{};let d=String(b.phone).replace(/\D/g,'').replace(/^00/,'');
-    const cc=(s.countryCode||'').replace(/\D/g,'');
-    if(cc&&d.length<=8)d=cc+d;
-    const tpl=s.confirmTemplate||'';
-    const w=slot(b);
-    const text=tpl.replace(/\{parent\}/g,b.parent).replace(/\{child\}/g,b.child).replace(/\{grade\}/g,b.grade)
-      .replace(/\{day\}/g,w.day).replace(/\{time\}/g,w.time).replace(/\{zoom\}/g,b.zoom_link||s.zoomLink||'(أنشئ رابط زووم لهذا الحجز أولًا)');
-    return 'https://wa.me/'+d+'?text='+encodeURIComponent(text);
+  function fact(dl,k,v){if(v===''||v===undefined||v===null)return;const d=el('div');d.append(el('dt','',k),el('dd','',v));dl.append(d)}
+  function inp(label,type,val,on,attrs){
+    const l=el('label','',label);const i=el('input');i.type=type;i.value=val;Object.assign(i,attrs||{});
+    i.addEventListener('change',()=>on(i.value));l.append(i);return l;
   }
-  function renderStats(counts){
-    const box=$('stats');box.textContent='';
-    const cur=$('statusFilter').value;
-    [['new','جديد'],['confirmed','مؤكد'],['done','تمت'],['cancelled','ملغى']].forEach(([k,l])=>{
-      const b=document.createElement('button');b.type='button';b.className='stat s-'+k;b.setAttribute('aria-pressed',String(cur===k));
-      const n=document.createElement('b');n.textContent=counts[k]||0;const s=document.createElement('span');s.textContent=l;
-      b.append(n,s);b.addEventListener('click',()=>{$('statusFilter').value=cur===k?'':k;loadBookings()});box.append(b);
+  function card(b){
+    const c=el('article','card');
+    const top=el('div','card-top');
+    const h=el('h3','',b.child);h.append(el('small','',b.grade+(b.age?' · '+b.age+' سنوات':'')));
+    const right=el('div');right.append(el('span','badge b-'+b.status,STATUS[b.status]||b.status),el('div','when',fmtDate(b.created_at)));
+    top.append(h,right);
+    const tags=el('div');
+    if(isTrial(b))tags.append(el('span','tag t-trial','تجريبية'));
+    tags.append(el('span','tag t-'+b.pay_status,PAYL[b.pay_status]||''));
+    if(b.status==='new'&&hoursOld(b)>24)tags.append(el('span','tag t-late','بلا رد +24 ساعة'));
+    if(b.next_follow)tags.append(el('span','tag',(b.next_follow<=today()?'متابعة مستحقة ':'متابعة ')+b.next_follow));
+    const dl=el('dl','facts');
+    fact(dl,'ولي الأمر',b.parent);fact(dl,'واتساب',b.phone);fact(dl,'البريد',b.email);fact(dl,'نوع الحصة',b.kind);fact(dl,'الباقة',b.plan);
+    fact(dl,'الأيام',b.days.join('، '));fact(dl,'الأوقات',b.times.join('، '));fact(dl,'المستوى',b.level);fact(dl,'المدرسة',b.school);
+    fact(dl,'الأهداف',(b.goals||[]).join('، '));fact(dl,'البدء',b.start_date);fact(dl,'عدد الأطفال',b.siblings>1?b.siblings:'');fact(dl,'الدولة',b.tz);fact(dl,'المصدر',b.source);
+    c.append(top,tags,dl);
+    if(b.notes)c.append(el('div','notes',b.notes));
+    const zb=el('div','zoombox');
+    if(b.zoom_link){
+      zb.append(el('span','hint','اجتماع زووم'+(b.zoom_start?' · '+slot(b).day+' الساعة '+slot(b).time:'')));
+      const za=el('a','zlink',b.zoom_link);za.href=b.zoom_link;za.target='_blank';za.rel='noopener';
+      const cp=el('button','ghost sm','نسخ الرابط');cp.type='button';
+      cp.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(b.zoom_link);toast('تم نسخ الرابط')}catch(e){toast('انسخ الرابط يدويًا من النص',true)}});
+      zb.append(za,cp);
+    }
+    const zm=el('button','ghost sm',b.zoom_link?'إنشاء اجتماع جديد':'إنشاء رابط زووم');zm.type='button';
+    zm.addEventListener('click',()=>openZoomForm(b,zb,zm));zb.append(zm);c.append(zb);
+    // progress and payment
+    const det=el('details','more');det.append(el('summary','','الدفع والتقدّم والمتابعة'));
+    const ed=el('div','edit');
+    const ps=el('select');Object.entries(PAYL).forEach(([k,l])=>{const o=el('option','',l);o.value=k;if(k===b.pay_status)o.selected=true;ps.append(o)});
+    ps.addEventListener('change',()=>patch(b.id,{pay_status:ps.value}));const pl=el('label','','حالة الدفع');pl.append(ps);
+    const pn=el('select');const op0=el('option','','—');op0.value='';pn.append(op0);((settings&&settings.plans)||[]).forEach(p=>{const o=el('option','',p.name);o.value=p.name;if(p.name===b.plan)o.selected=true;pn.append(o)});
+    pn.addEventListener('change',()=>{const p=((settings&&settings.plans)||[]).find(x=>x.name===pn.value);const body={plan:pn.value};if(p){if(!b.lessons_total)body.lessons_total=p.lessons;if(!Number(b.amount)&&p.price)body.amount=p.price}patch(b.id,body)});const pnl=el('label','','الباقة');pnl.append(pn);
+    ed.append(pl,pnl,
+      inp('المبلغ','number',b.amount||0,v=>patch(b.id,{amount:v}),{min:0,step:'0.5'}),
+      inp('عدد الحصص في الباقة','number',b.lessons_total||0,v=>patch(b.id,{lessons_total:v}),{min:0}),
+      inp('الحصص المنجزة','number',b.lessons_done||0,v=>patch(b.id,{lessons_done:v}),{min:0}),
+      inp('موعد المتابعة','date',b.next_follow||'',v=>patch(b.id,{next_follow:v})));
+    det.append(ed);c.append(det);
+    // actions
+    const ac=el('div','actions');
+    const sel=el('select');sel.setAttribute('aria-label','حالة الحجز');
+    Object.entries(STATUS).forEach(([k,l])=>{const o=el('option','',l);o.value=k;if(k===b.status)o.selected=true;sel.append(o)});
+    sel.addEventListener('change',()=>patch(b.id,{status:sel.value},'تم تحديث الحالة'));
+    const note=el('input');note.type='text';note.maxLength=500;note.placeholder='ملاحظة خاصة بك (لا يراها الأهل)';note.value=b.admin_note||'';note.setAttribute('aria-label','ملاحظة');
+    note.addEventListener('change',()=>patch(b.id,{admin_note:note.value},'تم حفظ الملاحظة'));
+    const msg=el('select');msg.setAttribute('aria-label','رسالة واتساب');
+    const m0=el('option','','واتساب: اختر رسالة');m0.value='';msg.append(m0);Object.entries(TPLN).forEach(([k,l])=>{const o=el('option','',l);o.value=k;msg.append(o)});
+    msg.addEventListener('change',()=>{if(msg.value)window.open(waLink(b,msg.value),'_blank','noopener');msg.value=''});
+    const wa=waBtn(b,b.status==='new'?'confirm':'reminder',b.status==='new'?'واتساب: تأكيد الموعد':'واتساب: تذكير');
+    const del=el('button','ghost sm danger','حذف');del.type='button';let armed=0;
+    del.addEventListener('click',async()=>{
+      if(!armed){armed=1;del.textContent='اضغط للتأكيد';setTimeout(()=>{armed=0;del.textContent='حذف'},3000);return}
+      try{await api('/api/admin/bookings?id='+b.id,{method:'DELETE'});toast('تم الحذف');loadBookings(true)}catch(e){toast(e.message,true)}
     });
+    ac.append(sel,note,wa,msg,del);c.append(ac);
+    return c;
   }
-  function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e}
-  function fact(dl,k,v){const d=el('div');d.append(el('dt','',k),el('dd','',v));dl.append(d)}
-  function renderList(){
-    const list=$('list');list.textContent='';
-    if(!bookings.length){list.append(el('div','empty','لا توجد حجوزات بعد. عندما يرسل أحد الأهالي طلبًا من الموقع سيظهر هنا.'));return}
-    bookings.forEach(b=>{
-      const c=el('article','card');
-      const top=el('div','card-top');
-      const h=el('h3','',b.child);h.append(el('small','',b.grade));
-      const right=el('div');right.append(el('span','badge b-'+b.status,STATUS[b.status]||b.status),el('div','when',fmtDate(b.created_at)));
-      top.append(h,right);
-      const dl=el('dl','facts');
-      fact(dl,'ولي الأمر',b.parent);fact(dl,'واتساب',b.phone);fact(dl,'نوع الحصة',b.kind);
-      fact(dl,'الأيام',b.days.join('، '));fact(dl,'الأوقات',b.times.join('، '));
-      c.append(top,dl);
-      if(b.notes)c.append(el('div','notes',b.notes));
-      const zb=el('div','zoombox');
-      if(b.zoom_link){
-        zb.append(el('span','hint','اجتماع زووم'+(b.zoom_start?' · '+slot(b).day+' الساعة '+slot(b).time:'')));
-        const za=el('a','zlink',b.zoom_link);za.href=b.zoom_link;za.target='_blank';za.rel='noopener';
-        const cp=el('button','ghost sm','نسخ الرابط');cp.type='button';
-        cp.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(b.zoom_link);toast('تم نسخ الرابط')}catch(e){toast('انسخ الرابط يدويًا من النص',true)}});
-        zb.append(za,cp);
-      }
-      const zm=el('button','ghost sm',b.zoom_link?'إنشاء اجتماع جديد':'إنشاء رابط زووم');zm.type='button';
-      zm.addEventListener('click',()=>openZoomForm(b,zb,zm));
-      zb.append(zm);c.append(zb);
-      const ac=el('div','actions');
-      const sel=el('select');sel.setAttribute('aria-label','حالة الحجز');
-      Object.entries(STATUS).forEach(([k,l])=>{const o=el('option','',l);o.value=k;if(k===b.status)o.selected=true;sel.append(o)});
-      sel.addEventListener('change',async()=>{try{await api('/api/admin/bookings',{method:'PATCH',body:{id:b.id,status:sel.value}});toast('تم تحديث الحالة');loadBookings(true)}catch(e){toast(e.message,true)}});
-      const note=el('input');note.type='text';note.maxLength=500;note.placeholder='ملاحظة خاصة بك (لا يراها الأهل)';note.value=b.admin_note||'';note.setAttribute('aria-label','ملاحظة');
-      note.addEventListener('change',async()=>{try{await api('/api/admin/bookings',{method:'PATCH',body:{id:b.id,admin_note:note.value}});toast('تم حفظ الملاحظة')}catch(e){toast(e.message,true)}});
-      const wa=el('a','btn sm','واتساب: تأكيد الموعد');wa.href=waLink(b);wa.target='_blank';wa.rel='noopener';
-      const del=el('button','ghost sm danger','حذف');del.type='button';
-      let armed=0;
-      del.addEventListener('click',async()=>{
-        if(!armed){armed=1;del.textContent='اضغط للتأكيد';setTimeout(()=>{armed=0;del.textContent='حذف'},3000);return}
-        try{await api('/api/admin/bookings?id='+b.id,{method:'DELETE'});toast('تم الحذف');loadBookings(true)}catch(e){toast(e.message,true)}
-      });
-      ac.append(sel,note,wa,del);c.append(ac);list.append(c);
-    });
+  function rBookings(){
+    const g=$('gradeFilter');if(!g.options.length){const o=el('option','','كل الصفوف');o.value='';g.append(o);['الأول الابتدائي','الثاني الابتدائي','الثالث الابتدائي','الرابع الابتدائي','الخامس الابتدائي','السادس الابتدائي'].forEach(x=>{const p=el('option','',x);p.value=x;g.append(p)})}
+    renderStats();
+    const list=$('list');list.textContent='';const rows=filtered();
+    if(!rows.length){list.append(el('div','empty',all.length?'لا توجد نتائج مطابقة.':'لا توجد حجوزات بعد. عندما يرسل أحد الأهالي طلبًا من الموقع سيظهر هنا.'));return}
+    rows.forEach(b=>list.append(card(b)));
   }
-  async function loadBookings(quiet){
-    const p=new URLSearchParams();
-    if($('statusFilter').value)p.set('status',$('statusFilter').value);
-    if($('q').value.trim())p.set('q',$('q').value.trim());
-    try{const j=await api('/api/admin/bookings?'+p);bookings=j.bookings;renderStats(j.counts);renderList()}
-    catch(e){if(!quiet)toast(e.message,true)}
-  }
-  $('statusFilter').addEventListener('change',()=>loadBookings());
-  $('q').addEventListener('input',()=>{clearTimeout(debounce);debounce=setTimeout(()=>loadBookings(),300)});
+  ['statusFilter','typeFilter','payFilter','gradeFilter'].forEach(id=>$(id).addEventListener('change',rBookings));
+  let deb=0;$('q').addEventListener('input',()=>{clearTimeout(deb);deb=setTimeout(rBookings,200)});
   $('refresh').addEventListener('click',()=>loadBookings());
 
-  $('csv').addEventListener('click',()=>{
-    if(!bookings.length){toast('لا توجد حجوزات للتصدير',true);return}
+  function csv(name,rows){
     const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-    const rows=[['الرقم','التاريخ','الطفل','الصف','ولي الأمر','واتساب','النوع','الأيام','الأوقات','الحالة','ملاحظات الأهل','ملاحظتي']];
-    bookings.forEach(b=>rows.push([b.id,b.created_at,b.child,b.grade,b.parent,b.phone,b.kind,b.days.join('، '),b.times.join('، '),STATUS[b.status]||b.status,b.notes,b.admin_note]));
     const blob=new Blob(['﻿'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='yasmina-bookings.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  }
+  $('csv').addEventListener('click',()=>{
+    const rows=filtered();if(!rows.length){toast('لا توجد حجوزات للتصدير',true);return}
+    const out=[['الرقم','التاريخ','الطفل','العمر','الصف','المستوى','المدرسة','الأهداف','ولي الأمر','واتساب','البريد','الدولة','المصدر','النوع','الباقة','تجريبية','الأيام','الأوقات','البدء','الحالة','الدفع','المبلغ','الحصص','المنجزة','ملاحظات الأهل','ملاحظتي']];
+    rows.forEach(b=>out.push([b.id,b.created_at,b.child,b.age,b.grade,b.level,b.school,(b.goals||[]).join('، '),b.parent,b.phone,b.email,b.tz,b.source,b.kind,b.plan,isTrial(b)?'نعم':'لا',b.days.join('، '),b.times.join('، '),b.start_date,STATUS[b.status]||b.status,PAYL[b.pay_status]||'',b.amount,b.lessons_total,b.lessons_done,b.notes,b.admin_note]));
+    csv('yasmina-bookings.csv',out);
   });
 
-  /* ----- settings ----- */
-  async function loadSettings(){
-    try{
-      const j=await api('/api/admin/settings');settings=j.settings;settings.zoomConfigured=j.zoomConfigured;
-      $('sWhats').value=settings.whatsapp||'';$('sCc').value=settings.countryCode||'';$('sZoom').value=settings.zoomLink||'';
-      $('sAnn').value=settings.announcement||'';$('sHost').value=settings.zoomHostEmail||'';$('sDur').value=settings.zoomDuration||40;
-      $('zoomStatus').textContent=j.zoomConfigured?'ربط زووم مفعّل. أنشئ الاجتماعات من بطاقة كل حجز.':'ربط زووم غير مفعّل. أضف ZOOM_ACCOUNT_ID وZOOM_CLIENT_ID وZOOM_CLIENT_SECRET كأسرار في Cloudflare، والخطوات في ملف README.';$('sTpl').value=settings.confirmTemplate||'';$('sTimes').value=(settings.times||[]).join('\n');
-      const box=$('sDays');box.textContent='';
-      j.allDays.forEach(d=>{const l=el('label','chip');const i=el('input');i.type='checkbox';i.value=d;i.checked=(settings.days||[]).includes(d);l.append(i,el('span','',d));box.append(l)});
-      renderList();
-    }catch(e){toast(e.message,true)}
+  /* ----- schedule ----- */
+  function mini(b,extra){
+    const r=el('div','row');const g=el('div','grow');
+    const t=el('b','',b.child);g.append(t,el('div','hint',b.grade+' · '+b.parent+' · '+b.phone));r.append(g);
+    (extra||[]).forEach(x=>r.append(x));return r;
   }
+  function rSchedule(){
+    const box=$('schedule');box.textContent='';
+    const sch=all.filter(b=>b.zoom_start&&b.status!=='cancelled').sort((a,b)=>a.zoom_start<b.zoom_start?-1:1);
+    const up=sch.filter(b=>slot(b).date>=today());
+    if(!up.length)box.append(el('div','empty','لا توجد حصص قادمة بروابط زووم. أنشئ اجتماعًا من بطاقة الحجز.'));
+    let last='';
+    up.forEach(b=>{const w=slot(b);if(w.date!==last){last=w.date;box.append(el('div','day',w.day+(w.date===today()?' · اليوم':'')))}
+      const z=el('a','ghost sm','فتح زووم');z.href=b.zoom_link;z.target='_blank';z.rel='noopener';
+      const r=mini(b,[el('b','',w.time),waBtn(b,'reminder','تذكير واتساب'),z]);box.append(r)});
+    const un=all.filter(b=>b.status==='confirmed'&&!b.zoom_start);
+    if(un.length){box.append(el('div','day','مؤكدة بلا موعد زووم'));un.forEach(b=>box.append(mini(b,[el('span','hint',b.days.join('، ')+' · '+b.times.join('، '))])))}
+    const past=sch.filter(b=>slot(b).date<today()&&b.status==='confirmed');
+    if(past.length){box.append(el('div','day','حصص مضت لم تُسجَّل كمنتهية'));past.forEach(b=>{
+      const ok=el('button','btn sm','تمت');ok.type='button';ok.addEventListener('click',()=>patch(b.id,{status:'done',lessons_done:(Number(b.lessons_done)||0)+1},'سُجّلت الحصة'));
+      box.append(mini(b,[el('span','hint',slot(b).day),ok,waBtn(b,'thanks','شكر')]))})}
+  }
+
+  /* ----- follow-up ----- */
+  function rFollow(){
+    const box=$('follow');box.textContent='';
+    const rows=all.filter(needsFollow).sort((a,b)=>ts(a.created_at)-ts(b.created_at));
+    if(!rows.length){box.append(el('div','empty','لا توجد متابعات مستحقة. ممتاز!'));return}
+    rows.forEach(b=>{
+      const why=b.status==='new'&&hoursOld(b)>24?'بلا رد منذ '+Math.floor(hoursOld(b)/24||1)+' يوم':'متابعة '+b.next_follow;
+      const d2=el('button','ghost sm','بعد يومين');d2.type='button';d2.addEventListener('click',()=>patch(b.id,{next_follow:addDays(2)},'تم تأجيل المتابعة'));
+      const dn=el('button','ghost sm','أُنجزت');dn.type='button';dn.addEventListener('click',()=>patch(b.id,{next_follow:''},'تمت المتابعة'));
+      box.append(mini(b,[el('span','tag t-late',why),waBtn(b,'follow','واتساب: متابعة'),d2,dn]));
+    });
+  }
+
+  /* ----- students ----- */
+  function groups(){
+    const m={};
+    all.filter(b=>b.status!=='cancelled').forEach(b=>{const k=String(b.phone).replace(/\D/g,'').slice(-8);(m[k]=m[k]||[]).push(b)});
+    return Object.values(m).map(g=>({g,last:g[0],kids:[...new Set(g.map(x=>x.child))],done:g.reduce((s,x)=>s+(Number(x.lessons_done)||0),0),total:g.reduce((s,x)=>s+(Number(x.lessons_total)||0),0),paid:g.reduce((s,x)=>s+(x.pay_status==='unpaid'?0:Number(x.amount)||0),0)}));
+  }
+  function rStudents(){
+    const box=$('students');box.textContent='';const q=$('sq').value.trim().toLowerCase();
+    const rows=groups().filter(x=>!q||(x.kids.join(' ')+x.last.parent+x.last.phone).toLowerCase().includes(q));
+    if(!rows.length){box.append(el('div','empty','لا يوجد طلاب بعد.'));return}
+    rows.forEach(x=>{
+      const left=x.total?x.total-x.done:0;
+      const s=el('span','hint',x.done+' / '+(x.total||'—')+' حصة'+(x.paid?' · '+money(x.paid):''));
+      const extra=[s];if(x.total&&left<=1)extra.push(el('span','tag t-late',left<=0?'انتهت الباقة':'بقيت حصة'));
+      extra.push(waBtn(x.last,'reminder','واتساب','ghost sm'));
+      const r=mini(x.last,extra);r.firstChild.firstChild.textContent=x.kids.join('، ');r.firstChild.lastChild.textContent=x.last.parent+' · '+x.last.phone+(x.last.grade?' · '+x.last.grade:'');
+      box.append(r);
+    });
+  }
+  $('sq').addEventListener('input',rStudents);
+
+  /* ----- payments ----- */
+  function rPayments(){
+    const k=$('payKpis');k.textContent='';
+    const sum=f=>all.filter(f).reduce((s,b)=>s+(Number(b.amount)||0),0);
+    [['محصّل',money(sum(b=>b.pay_status==='paid')),''],['جزئي',money(sum(b=>b.pay_status==='partial')),''],['مستحق غير مدفوع',money(sum(b=>b.pay_status==='unpaid'&&b.status!=='cancelled')),''],['الباقات المنتهية',all.filter(b=>b.lessons_total>0&&b.lessons_done>=b.lessons_total).length,'تحتاج تجديدًا']]
+      .forEach(([l,v,s])=>{const d=el('div','kpi');d.append(el('b','',v),el('span','',l));if(s)d.append(el('small','',s));k.append(d)});
+    const box=$('payList');box.textContent='';
+    const rows=all.filter(b=>b.status!=='cancelled'&&(b.plan||Number(b.amount)>0||b.pay_status!=='unpaid'));
+    if(!rows.length){box.append(el('div','empty','لم تُسجَّل باقات أو مدفوعات بعد. افتح "الدفع والتقدّم" في بطاقة الحجز.'));return}
+    rows.forEach(b=>{
+      const ps=el('select');Object.entries(PAYL).forEach(([kk,l])=>{const o=el('option','',l);o.value=kk;if(kk===b.pay_status)o.selected=true;ps.append(o)});
+      ps.addEventListener('change',()=>patch(b.id,{pay_status:ps.value}));
+      const am=el('input');am.type='number';am.min=0;am.step='0.5';am.value=b.amount||0;am.style.width='110px';am.setAttribute('aria-label','المبلغ');am.addEventListener('change',()=>patch(b.id,{amount:am.value}));
+      box.append(mini(b,[el('span','hint',(b.plan||'—')+' · '+(b.lessons_done||0)+'/'+(b.lessons_total||0)),am,ps]));
+    });
+  }
+  $('payCsv').addEventListener('click',()=>{
+    const out=[['الطفل','ولي الأمر','واتساب','الباقة','الحصص','المنجزة','المبلغ','الدفع','التاريخ']];
+    all.filter(b=>b.status!=='cancelled').forEach(b=>out.push([b.child,b.parent,b.phone,b.plan,b.lessons_total,b.lessons_done,b.amount,PAYL[b.pay_status]||'',b.created_at]));
+    csv('yasmina-payments.csv',out);
+  });
+
+  /* ----- messages ----- */
+  $('msgForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    await saveSettings({confirmTemplate:$('mConfirm').value,reminderTemplate:$('mReminder').value,followTemplate:$('mFollow').value,cancelTemplate:$('mCancel').value,thanksTemplate:$('mThanks').value},$('msgErr'),'تم حفظ القوالب');
+  });
+
+  /* ----- teacher and plans ----- */
+  function statRow(n,l){
+    const r=el('div','rep');const a=el('input');a.type='text';a.maxLength=10;a.placeholder='+10';a.value=n;a.dir='ltr';a.style.textAlign='right';a.style.maxWidth='110px';
+    const b=el('input');b.type='text';b.maxLength=60;b.placeholder='سنوات خبرة';b.value=l;
+    const x=el('button','ghost sm danger','حذف');x.type='button';x.addEventListener('click',()=>r.remove());
+    r.style.gridTemplateColumns='110px 1fr auto';r.dataset.kind='stat';r.append(a,b,x);return r;
+  }
+  function planRow(p){
+    const r=el('div','rep');r.dataset.kind='plan';
+    const nm=el('input');nm.type='text';nm.maxLength=40;nm.placeholder='اسم الباقة';nm.value=p.name;
+    const ls=el('input');ls.type='number';ls.min=0;ls.placeholder='الحصص';ls.value=p.lessons;ls.style.maxWidth='90px';
+    const pr=el('input');pr.type='number';pr.min=0;pr.step='0.5';pr.placeholder='السعر';pr.value=p.price;pr.style.maxWidth='110px';
+    const x=el('button','ghost sm danger','حذف');x.type='button';x.addEventListener('click',()=>r.remove());
+    r.style.gridTemplateColumns='1fr 90px 110px auto';r.append(nm,ls,pr,x);return r;
+  }
+  function fillTeacher(){
+    const s=settings;if(!s)return;
+    $('tName').value=s.teacherName||'';$('tTitle').value=s.teacherTitle||'';$('tYears').value=s.teacherYears;$('tCity').value=s.teacherCity||'';$('tArea').value=s.teacherArea||'';$('tMap').value=s.mapQuery||'';$('tBio').value=s.teacherBio||'';$('tCur').value=s.currency||'';
+    const sr=$('statRows');sr.textContent='';(s.teacherStats||[]).forEach(x=>sr.append(statRow(x.n,x.l)));
+    const pr=$('planRows');pr.textContent='';(s.plans||[]).forEach(p=>pr.append(planRow(p)));
+  }
+  $('addStat').addEventListener('click',()=>{if($('statRows').children.length<8)$('statRows').append(statRow('',''))});
+  $('addPlan').addEventListener('click',()=>{if($('planRows').children.length<8)$('planRows').append(planRow({name:'',lessons:1,price:0}))});
+  $('teacherForm').addEventListener('submit',async e=>{
+    e.preventDefault();
+    const stats=[...$('statRows').children].map(r=>({n:r.children[0].value,l:r.children[1].value}));
+    const plans=[...$('planRows').children].map(r=>({name:r.children[0].value,lessons:Number(r.children[1].value)||0,price:Number(r.children[2].value)||0}));
+    await saveSettings({teacherName:$('tName').value,teacherTitle:$('tTitle').value,teacherYears:Number($('tYears').value)||0,teacherCity:$('tCity').value,teacherArea:$('tArea').value,mapQuery:$('tMap').value,teacherBio:$('tBio').value,currency:$('tCur').value,teacherStats:stats,plans},$('teacherErr'),'تم حفظ بيانات المعلمة والباقات');
+  });
+
+  /* ----- site settings ----- */
   $('settingsForm').addEventListener('submit',async e=>{
-    e.preventDefault();$('setErr').textContent='';$('saveSettings').disabled=true;
-    try{
-      const j=await api('/api/admin/settings',{method:'PUT',body:{
-        whatsapp:$('sWhats').value,countryCode:$('sCc').value,zoomLink:$('sZoom').value,announcement:$('sAnn').value,confirmTemplate:$('sTpl').value,zoomHostEmail:$('sHost').value,zoomDuration:Number($('sDur').value)||40,
-        days:[...document.querySelectorAll('#sDays input:checked')].map(i=>i.value),
-        times:$('sTimes').value.split('\n').map(s=>s.trim()).filter(Boolean)}});
-      const zc=settings&&settings.zoomConfigured;settings=j.settings;settings.zoomConfigured=zc;toast('تم حفظ الإعدادات');renderList();
-    }catch(err){$('setErr').textContent=err.message}
+    e.preventDefault();$('saveSettings').disabled=true;
+    await saveSettings({whatsapp:$('sWhats').value,countryCode:$('sCc').value,zoomLink:$('sZoom').value,announcement:$('sAnn').value,zoomHostEmail:$('sHost').value,zoomDuration:Number($('sDur').value)||40,
+      days:[...document.querySelectorAll('#sDays input:checked')].map(i=>i.value),times:$('sTimes').value.split('\n').map(s=>s.trim()).filter(Boolean)},$('setErr'),'تم حفظ الإعدادات');
     $('saveSettings').disabled=false;
   });
 
-  /* ----- start ----- */
   fetch('/api/admin/me',{credentials:'same-origin'}).then(r=>r.ok?showApp():showLogin()).catch(showLogin);
 })();
 </script>

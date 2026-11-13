@@ -4,6 +4,12 @@ export const GRADES = ['الأول الابتدائي', 'الثاني الابت
 export const KINDS = ['حصة فردية', 'مجموعة صغيرة', 'أحتاج إلى نصيحة'];
 export const ALL_DAYS = ['السبت', 'الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة'];
 export const STATUSES = ['new', 'confirmed', 'done', 'cancelled'];
+export const LEVELS = ['لا يعرف الإنجليزية بعد', 'يعرف الحروف والكلمات البسيطة', 'يقرأ كلمات وجملًا قصيرة', 'يقرأ ويتحدث بشكل متوسط', 'لا أعرف، أريد تقييمًا'];
+export const GOALS = ['تأسيس الحروف والأصوات', 'القراءة', 'المفردات', 'النطق والمحادثة', 'الكتابة والإملاء', 'مراجعة المنهج المدرسي', 'التحضير للاختبارات', 'حب اللغة والثقة'];
+export const SCHOOLS = ['حكومي', 'لغات', 'دولي', 'تعليم منزلي'];
+export const SOURCES = ['واتساب', 'انستغرام', 'تيك توك', 'صديق أو قريب', 'بحث جوجل', 'أخرى'];
+export const TZS = ['الكويت', 'السعودية', 'الإمارات', 'قطر', 'البحرين', 'عُمان', 'مصر', 'أخرى'];
+export const PAY = ['unpaid', 'partial', 'paid'];
 
 export const DEFAULTS = {
   whatsapp: '',
@@ -14,6 +20,31 @@ export const DEFAULTS = {
   announcement: '',
   days: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'],
   times: ['3:00 م', '4:00 م', '5:00 م', '6:00 م', '7:00 م'],
+  currency: 'د.ك',
+  teacherName: 'يسمينا طارق العربي',
+  teacherTitle: 'معلمة لغة إنجليزية للمرحلة الابتدائية',
+  teacherYears: 10,
+  teacherCity: 'الإسكندرية',
+  teacherArea: 'البيطاش',
+  mapQuery: 'البيطاش، الإسكندرية، مصر',
+  teacherBio:
+    'معلمة لغة إنجليزية بخبرة تزيد على 10 سنوات في تدريس الأطفال، تعمل في الإسكندرية (منطقة البيطاش). تقدّم حصصًا مباشرة عبر زووم لطلاب المرحلة الابتدائية بأسلوب ممتع ومنظّم، وتتابع كل طفل على حدة.',
+  teacherStats: [
+    { n: '+10', l: 'سنوات خبرة في تدريس الإنجليزية' },
+    { n: '6', l: 'صفوف ابتدائية، من الأول إلى السادس' },
+    { n: '40', l: 'دقيقة لكل حصة مباشرة' },
+    { n: '1:1', l: 'حصة فردية أو مجموعة صغيرة' },
+  ],
+  plans: [
+    { name: 'حصة تجريبية', lessons: 1, price: 0 },
+    { name: 'باقة 4 حصص', lessons: 4, price: 0 },
+    { name: 'باقة 8 حصص', lessons: 8, price: 0 },
+    { name: 'باقة 12 حصة', lessons: 12, price: 0 },
+  ],
+  reminderTemplate: 'السلام عليكم {parent}، تذكير بحصة {child} {day} الساعة {time} بتوقيت الكويت.\nرابط زووم: {zoom}\nنراكم قريبًا.',
+  followTemplate: 'السلام عليكم {parent}، وصلنا طلب حجز حصة إنجليزية لـ {child} ({grade}). هل ما زلتم مهتمين؟ يسعدنا تحديد موعد مناسب لكم.',
+  cancelTemplate: 'السلام عليكم {parent}، تم إلغاء حصة {child} المقررة {day} الساعة {time}. يسعدنا إعادة الجدولة في الوقت الذي يناسبكم.',
+  thanksTemplate: 'شكرًا لكم {parent} على حضور {child} اليوم. نتمنى أن تكون الحصة ممتعة، وسنرسل لكم ملاحظات التقدّم قريبًا.',
   confirmTemplate:
     'السلام عليكم {parent}، تم تأكيد حصة {child} ({grade}).\nالموعد: {day} الساعة {time} بتوقيت الكويت.\nرابط زووم: {zoom}\nنتمنى لطفلك حصة ممتعة.',
 };
@@ -50,6 +81,22 @@ async function migrate(db) {
     ['zoom_link', "TEXT NOT NULL DEFAULT ''"],
     ['zoom_meeting_id', "TEXT NOT NULL DEFAULT ''"],
     ['zoom_start', "TEXT NOT NULL DEFAULT ''"],
+    ['age', "TEXT NOT NULL DEFAULT ''"],
+    ['level', "TEXT NOT NULL DEFAULT ''"],
+    ['goals', "TEXT NOT NULL DEFAULT '[]'"],
+    ['school', "TEXT NOT NULL DEFAULT ''"],
+    ['plan', "TEXT NOT NULL DEFAULT ''"],
+    ['trial', 'INTEGER NOT NULL DEFAULT 0'],
+    ['email', "TEXT NOT NULL DEFAULT ''"],
+    ['start_date', "TEXT NOT NULL DEFAULT ''"],
+    ['siblings', 'INTEGER NOT NULL DEFAULT 1'],
+    ['tz', "TEXT NOT NULL DEFAULT ''"],
+    ['source', "TEXT NOT NULL DEFAULT ''"],
+    ['pay_status', "TEXT NOT NULL DEFAULT 'unpaid'"],
+    ['amount', 'REAL NOT NULL DEFAULT 0'],
+    ['lessons_total', 'INTEGER NOT NULL DEFAULT 0'],
+    ['lessons_done', 'INTEGER NOT NULL DEFAULT 0'],
+    ['next_follow', "TEXT NOT NULL DEFAULT ''"],
   ];
   for (const [name, def] of cols) {
     try {
@@ -140,6 +187,34 @@ export function sanitizeSettings(input) {
     s.times = t;
   }
   if ('confirmTemplate' in input) s.confirmTemplate = clean(input.confirmTemplate, 600);
+  for (const k of ['reminderTemplate', 'followTemplate', 'cancelTemplate', 'thanksTemplate']) if (k in input) s[k] = clean(input[k], 600);
+  if ('currency' in input) s.currency = clean(input.currency, 8);
+  if ('teacherName' in input) s.teacherName = clean(input.teacherName, 60);
+  if ('teacherTitle' in input) s.teacherTitle = clean(input.teacherTitle, 80);
+  if ('teacherCity' in input) s.teacherCity = clean(input.teacherCity, 40);
+  if ('teacherArea' in input) s.teacherArea = clean(input.teacherArea, 40);
+  if ('mapQuery' in input) s.mapQuery = clean(input.mapQuery, 120);
+  if ('teacherBio' in input) s.teacherBio = clean(input.teacherBio, 700);
+  if ('teacherYears' in input) {
+    const y = Math.round(Number(input.teacherYears));
+    if (!Number.isFinite(y) || y < 0 || y > 60) throw new Error('سنوات الخبرة بين 0 و60.');
+    s.teacherYears = y;
+  }
+  if ('teacherStats' in input) {
+    const arr = (Array.isArray(input.teacherStats) ? input.teacherStats : [])
+      .map((x) => ({ n: clean(x && x.n, 10), l: clean(x && x.l, 60) }))
+      .filter((x) => x.n && x.l)
+      .slice(0, 8);
+    s.teacherStats = arr;
+  }
+  if ('plans' in input) {
+    const arr = (Array.isArray(input.plans) ? input.plans : [])
+      .map((x) => ({ name: clean(x && x.name, 40), lessons: Math.max(0, Math.min(200, Math.round(Number(x && x.lessons) || 0))), price: Math.max(0, Math.min(100000, Number(x && x.price) || 0)) }))
+      .filter((x) => x.name)
+      .slice(0, 8);
+    if (!arr.length) throw new Error('أضف باقة واحدة على الأقل.');
+    s.plans = arr;
+  }
   return s;
 }
 
@@ -168,7 +243,27 @@ export function validateBooking(b, settings) {
   if (!days.length) return { error: 'اختر يومًا واحدًا على الأقل.' };
   const times = cleanList(b.times, 14, 16).filter((t) => settings.times.includes(t));
   if (!times.length) return { error: 'اختر وقتًا واحدًا على الأقل.' };
-  return { value: { child, grade: b.grade, parent, phone, kind: b.kind, days, times, notes } };
+  const age = String(b.age ?? '').trim();
+  if (age && !/^(?:[5-9]|1[0-3])$/.test(age)) return { error: 'عمر الطفل بين 5 و13 سنة.' };
+  const level = b.level ? String(b.level) : '';
+  if (level && !LEVELS.includes(level)) return { error: 'مستوى غير صالح.' };
+  const goals = cleanList(b.goals, 40, 8).filter((g) => GOALS.includes(g));
+  const school = b.school ? String(b.school) : '';
+  if (school && !SCHOOLS.includes(school)) return { error: 'نوع المدرسة غير صالح.' };
+  const plan = b.plan ? clean(b.plan, 40) : '';
+  if (plan && !settings.plans.some((p) => p.name === plan)) return { error: 'الباقة غير موجودة.' };
+  const email = clean(b.email, 120);
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'البريد الإلكتروني غير صحيح.' };
+  const start = b.start_date ? String(b.start_date) : '';
+  if (start && !/^\d{4}-\d{2}-\d{2}$/.test(start)) return { error: 'تاريخ البدء غير صالح.' };
+  const tz = b.tz ? String(b.tz) : '';
+  if (tz && !TZS.includes(tz)) return { error: 'الدولة غير صالحة.' };
+  const source = b.source ? String(b.source) : '';
+  if (source && !SOURCES.includes(source)) return { error: 'المصدر غير صالح.' };
+  const sib = Math.round(Number(b.siblings) || 1);
+  const siblings = sib >= 1 && sib <= 6 ? sib : 1;
+  const trial = b.trial ? 1 : 0;
+  return { value: { child, grade: b.grade, parent, phone, kind: b.kind, days, times, notes, age, level, goals, school, plan, trial, email, start_date: start, siblings, tz, source } };
 }
 
 /* ---------- admin sign-in (signed cookie, no extra storage) ---------- */

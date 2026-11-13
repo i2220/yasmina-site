@@ -147,6 +147,42 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cream);outline-o
   .why,.levels,.steps,.row{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){.loader span{animation:none}}
+/* teacher */
+.tch{display:grid;gap:clamp(18px,3vw,28px)}
+.tch-head{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.avatar{flex:none;display:grid;place-items:center;width:clamp(84px,12vw,112px);height:clamp(84px,12vw,112px);border-radius:50%;background:radial-gradient(circle at 30% 25%,#1a47c9,#0a2a8a);border:2px solid var(--line);box-shadow:0 12px 34px -12px rgba(0,0,0,.6)}
+.avatar svg{width:62%;height:62%}
+.tch-id h4{font-weight:900;font-size:clamp(24px,3.4vw,34px);line-height:1.3;color:var(--cream)}
+.tTitle{color:var(--muted);font-weight:600}
+.tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.tags span{display:inline-flex;align-items:center;min-height:32px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:rgba(255,229,0,.08);font-weight:700;font-size:14px;color:var(--cream)}
+.tbio{max-width:46em;font-size:18px;color:var(--ink)}
+.tstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.tstat{padding:20px 18px;border-radius:22px;border:1px solid var(--line);background:var(--panel);display:grid;gap:4px}
+.tstat b{font-weight:900;font-size:clamp(34px,5vw,50px);line-height:1.1;color:var(--cream);font-variant-numeric:tabular-nums}
+.tstat span{font-weight:600;font-size:15px;color:var(--muted);line-height:1.5}
+.tstat:first-child{background:linear-gradient(160deg,rgba(255,229,0,.16),rgba(255,229,0,.04));border-color:rgba(255,229,0,.55)}
+.tmap{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr);border:1px solid var(--line);border-radius:26px;overflow:hidden;background:var(--panel)}
+.tmap-info{padding:clamp(18px,3vw,28px);display:flex;flex-direction:column;gap:8px;justify-content:center;align-items:flex-start}
+.tmap-info b{font-weight:800;font-size:22px;color:var(--cream)}
+.tmap-info small{color:var(--muted);font-size:15px;line-height:1.6}
+.tmap iframe{display:block;width:100%;height:clamp(280px,40vw,380px);border:0;background:#0b1a4a}
+@media (max-width:820px){.tstats{grid-template-columns:repeat(2,minmax(0,1fr))}.tmap{grid-template-columns:1fr}}
+/* booking wizard */
+em{font-style:normal;color:var(--muted);font-weight:500;font-size:14px}
+.steps2{list-style:none;display:flex;gap:10px;margin-bottom:6px}
+.steps2 li{flex:1;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;border:1px solid var(--line);color:var(--muted);font-weight:700;transition:background .3s,color .3s,border-color .3s}
+.steps2 li i{display:grid;place-items:center;flex:none;width:28px;height:28px;border-radius:50%;border:1.5px solid currentColor;font-style:normal;font-weight:800;font-size:14px}
+.steps2 li.on{background:var(--cream);color:#0b1f5c;border-color:var(--cream)}
+.steps2 li.done{color:var(--cream);border-color:rgba(255,229,0,.6)}
+.stepbox{display:grid;gap:22px;animation:fadein .35s ease}
+.stepbox[hidden]{display:none}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.consent{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:16px;border:1px solid var(--line);cursor:pointer}
+.consent input{width:22px;height:22px;margin-top:4px;accent-color:#ffe500;flex:none}
+.wiz{display:flex;gap:12px;flex-wrap:wrap}
+.wiz [hidden]{display:none}
+@media (max-width:520px){.steps2 li span{display:none}.steps2 li{justify-content:center}}
 </style>
 </head>
 <body>
@@ -170,6 +206,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cream);outline-o
     <nav aria-label="القائمة الرئيسية">
       <button class="l" type="button" data-open="why">عن يسمينا</button>
       <button class="l" type="button" data-open="levels">الصفوف</button>
+      <button class="l" type="button" data-open="teacher">المعلمة</button>
       <button class="l" type="button" data-open="how">كيف تتم الحصة</button>
       <button class="pill" type="button" data-open="book">احجز حصة</button>
     </nav>
@@ -229,34 +266,96 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cream);outline-o
       </ol>
     </section>
 
+    <section class="blk" id="teacher">
+      <div class="kicker">Meet your teacher</div>
+      <h3>تعرّفوا على المعلمة</h3>
+      <div class="tch">
+        <div class="tch-head">
+          <div class="avatar" aria-hidden="true"><svg><use href="#jasmine"/></svg></div>
+          <div class="tch-id">
+            <h4 id="tName">المعلمة يسمينا طارق العربي</h4>
+            <div class="tTitle" id="tTitle">معلمة لغة إنجليزية للمرحلة الابتدائية</div>
+            <div class="tags"><span id="tYears">خبرة +10 سنوات</span><span id="tPlace">الإسكندرية، البيطاش</span></div>
+          </div>
+        </div>
+        <p class="tbio" id="tBio"></p>
+        <div class="tstats" id="tStats"></div>
+        <div class="tmap">
+          <div class="tmap-info">
+            <b>مكان عمل المعلمة</b>
+            <span id="tWhere">الإسكندرية، منطقة البيطاش</span>
+            <small>الحصص أونلاين على زووم، فيمكنكم الحجز من أي مكان.</small>
+            <a class="ghost" id="tMapLink" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=%D8%A7%D9%84%D8%A8%D9%8A%D8%B7%D8%A7%D8%B4%D8%8C%20%D8%A7%D9%84%D8%A5%D8%B3%D9%83%D9%86%D8%AF%D8%B1%D9%8A%D8%A9">افتح في خرائط جوجل</a>
+          </div>
+          <iframe id="tMap" title="خريطة الإسكندرية، منطقة البيطاش" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+        </div>
+      </div>
+    </section>
+
     <section class="blk" id="book">
       <div class="kicker">Book a class</div>
       <h3>احجز حصة لطفلك</h3>
       <div class="formbox">
         <form id="bookForm" novalidate>
-          <div class="row">
-            <div class="field"><label class="t" for="child">اسم الطفل</label><input id="child" type="text" autocomplete="off" maxlength="60" placeholder="مثال: سارة"></div>
-            <div class="field"><label class="t" for="grade">الصف الدراسي</label>
-              <select id="grade"><option value="">اختر الصف</option><option>الأول الابتدائي</option><option>الثاني الابتدائي</option><option>الثالث الابتدائي</option><option>الرابع الابتدائي</option><option>الخامس الابتدائي</option><option>السادس الابتدائي</option></select></div>
-          </div>
-          <div class="row">
-            <div class="field"><label class="t" for="parent">اسم ولي الأمر</label><input id="parent" type="text" autocomplete="name" maxlength="60"></div>
-            <div class="field"><label class="t" for="phone">رقم واتساب</label><input id="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="مثال: 5xxxxxxx" dir="ltr" style="text-align:right"></div>
-          </div>
-          <fieldset><legend>نوع الحصة</legend>
-            <div class="chips">
-              <label class="chip"><input type="radio" name="kind" value="حصة فردية" checked><span>حصة فردية</span></label>
-              <label class="chip"><input type="radio" name="kind" value="مجموعة صغيرة"><span>مجموعة صغيرة</span></label>
-              <label class="chip"><input type="radio" name="kind" value="أحتاج إلى نصيحة"><span>أحتاج إلى نصيحة</span></label>
+          <ol class="steps2" id="stepBar" aria-label="خطوات الحجز">
+            <li class="on" data-s="1"><i>1</i><span>الطفل</span></li>
+            <li data-s="2"><i>2</i><span>ولي الأمر</span></li>
+            <li data-s="3"><i>3</i><span>الموعد</span></li>
+          </ol>
+
+          <div class="stepbox" data-step="1">
+            <div class="row">
+              <div class="field"><label class="t" for="child">اسم الطفل</label><input id="child" type="text" autocomplete="off" maxlength="60" placeholder="مثال: سارة"></div>
+              <div class="field"><label class="t" for="age">عمر الطفل</label><select id="age"></select></div>
             </div>
-          </fieldset>
-          <fieldset><legend>الأيام المناسبة</legend><div class="chips" id="daysBox"></div></fieldset>
-          <fieldset><legend>الوقت المناسب (بتوقيت الكويت)</legend><div class="chips" id="timesBox"></div></fieldset>
-          <div class="field"><label class="t" for="notes">ملاحظات (اختياري)</label><textarea id="notes" maxlength="500" placeholder="مثال: طفلي يعرف الحروف ويحتاج إلى تدريب على القراءة"></textarea></div>
+            <div class="row">
+              <div class="field"><label class="t" for="grade">الصف الدراسي</label>
+                <select id="grade"><option value="">اختر الصف</option><option>الأول الابتدائي</option><option>الثاني الابتدائي</option><option>الثالث الابتدائي</option><option>الرابع الابتدائي</option><option>الخامس الابتدائي</option><option>السادس الابتدائي</option></select></div>
+              <div class="field"><label class="t" for="school">نوع المدرسة <em>(اختياري)</em></label><select id="school"></select></div>
+            </div>
+            <div class="field"><label class="t" for="level">مستوى الطفل الحالي في الإنجليزية</label><select id="level"></select><span class="note">لا تقلق إن لم تكن متأكدًا، تقيّم المعلمة المستوى في أول حصة.</span></div>
+            <fieldset><legend>ماذا تريد أن يتعلم طفلك؟ <em>(اختر ما يناسب)</em></legend><div class="chips" id="goalsBox"></div></fieldset>
+          </div>
+
+          <div class="stepbox" data-step="2" hidden>
+            <div class="row">
+              <div class="field"><label class="t" for="parent">اسم ولي الأمر</label><input id="parent" type="text" autocomplete="name" maxlength="60"></div>
+              <div class="field"><label class="t" for="phone">رقم واتساب</label><input id="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="مثال: 5xxxxxxx" dir="ltr" style="text-align:right"></div>
+            </div>
+            <div class="row">
+              <div class="field"><label class="t" for="email">البريد الإلكتروني <em>(اختياري)</em></label><input id="email" type="text" inputmode="email" autocomplete="email" maxlength="120" dir="ltr" style="text-align:right" placeholder="name@example.com"></div>
+              <div class="field"><label class="t" for="tz">الدولة (لضبط توقيت الحصة)</label><select id="tz"></select></div>
+            </div>
+            <div class="field"><label class="t" for="source">كيف عرفت عنا؟ <em>(اختياري)</em></label><select id="source"></select></div>
+          </div>
+
+          <div class="stepbox" data-step="3" hidden>
+            <fieldset><legend>نوع الحصة</legend>
+              <div class="chips">
+                <label class="chip"><input type="radio" name="kind" value="حصة فردية" checked><span>حصة فردية</span></label>
+                <label class="chip"><input type="radio" name="kind" value="مجموعة صغيرة"><span>مجموعة صغيرة</span></label>
+                <label class="chip"><input type="radio" name="kind" value="أحتاج إلى نصيحة"><span>أحتاج إلى نصيحة</span></label>
+              </div>
+            </fieldset>
+            <fieldset><legend>الباقة المناسبة</legend><div class="chips" id="plansBox"></div><p class="note" id="planNote"></p></fieldset>
+            <fieldset><legend>الأيام المناسبة</legend><div class="chips" id="daysBox"></div></fieldset>
+            <fieldset><legend>الوقت المناسب <em>(بتوقيت الكويت)</em></legend><div class="chips" id="timesBox"></div></fieldset>
+            <div class="row">
+              <div class="field"><label class="t" for="startDate">أقرب تاريخ للبدء <em>(اختياري)</em></label><input id="startDate" type="date"></div>
+              <div class="field"><label class="t" for="siblings">عدد الأطفال المسجَّلين</label><select id="siblings"><option value="1">طفل واحد</option><option value="2">طفلان</option><option value="3">ثلاثة أطفال</option><option value="4">أربعة أطفال</option></select></div>
+            </div>
+            <div class="field"><label class="t" for="notes">ملاحظات <em>(اختياري)</em></label><textarea id="notes" maxlength="500" placeholder="مثال: طفلي يعرف الحروف ويحتاج إلى تدريب على القراءة"></textarea></div>
+            <label class="consent"><input id="consent" type="checkbox"><span>أوافق على التواصل معي عبر واتساب لتأكيد الحجز وإرسال رابط الحصة.</span></label>
+          </div>
+
           <div class="hp" aria-hidden="true"><label>لا تملأ هذا الحقل<input id="website" type="text" tabindex="-1" autocomplete="off"></label></div>
           <div class="err" id="err" role="alert"></div>
-          <div><button class="btn" id="submit" type="submit">أرسل طلب الحجز</button></div>
-          <p class="note">نتواصل معك على واتساب لتأكيد الموعد وإرسال رابط زووم.</p>
+          <div class="wiz">
+            <button class="ghost" id="back" type="button" hidden>السابق</button>
+            <button class="btn" id="next" type="button">التالي</button>
+            <button class="btn" id="submit" type="submit" hidden>أرسل طلب الحجز</button>
+          </div>
+          <p class="note">نتواصل معك على واتساب لتأكيد الموعد وإرسال رابط زووم. لا ندفع شيئًا الآن.</p>
         </form>
         <div class="done" id="done" hidden>
           <h4 id="doneTitle">وصلنا طلب الحجز</h4>
@@ -294,7 +393,7 @@ const valley=(function(){
     DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;
     cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
     mobile=W<=820;
-    if(mobile){R=Math.min(W*.36,H*.17);CX=W*.5;CY=H*.74}else{R=Math.min(W*.17,H*.31);CX=W*.26;CY=H*.52}
+    if(mobile){R=Math.min(W*.4,H*.19);CX=W*.5;CY=H*.74}else{R=Math.min(W*.19,H*.345);CX=W*.26;CY=H*.52}
   }
   addEventListener('resize',resize);resize();
 
@@ -491,7 +590,7 @@ const ORB=(()=>{const c=mkc(64),g=c.getContext('2d'),m=32,gl=g.createRadialGradi
 
   /* ---------- the bouquet ---------- */
   const parts=[];
-  const N=mobile?900:1900;
+  const N=mobile?1050:2500;
   const R0=(a,b)=>a+Math.random()*(b-a);
   for(let i=0;i<N;i++){
     const y=1-2*(i+.5)/N,rr=Math.sqrt(1-y*y),th=i*2.399963;
@@ -778,18 +877,48 @@ const go=document.getElementById('go');
     },200);
     return true;
   }
+  /* many kinds of day birds: each species is a small recipe of glides, trills and pauses */
+  function voice(t,f,d,o){
+    o=o||{};
+    const os=ac.createOscillator(),g=ac.createGain();
+    os.type=o.type||'sine';os.frequency.setValueAtTime(f,t);
+    os.frequency.exponentialRampToValueAtTime(Math.max(80,f*(o.to||1)),t+d);
+    if(o.vib){const l=ac.createOscillator(),lg=ac.createGain();l.frequency.value=o.vib;lg.gain.value=f*.025;l.connect(lg);lg.connect(os.frequency);l.start(t);l.stop(t+d+.05)}
+    const pk=o.vol||.05;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(pk,t+Math.min(.02,d/3));g.gain.exponentialRampToValueAtTime(.0008,t+d);
+    let out=g;
+    if(ac.createStereoPanner&&o.pan!=null){const pn=ac.createStereoPanner();pn.pan.value=o.pan;g.connect(pn);out=pn}
+    os.connect(g);out.connect(master);os.start(t);os.stop(t+d+.03);
+  }
+  const SPECIES=[
+    // sparrow: short dry chirps
+    (t,pan)=>{const n=3+Math.floor(Math.random()*4);for(let i=0;i<n;i++){voice(t,rnd(3200,4600),.05,{to:rnd(.75,1.3),vol:.045,type:'triangle',pan});t+=rnd(.09,.2)}},
+    // warbler: fast bright trill
+    (t,pan)=>{const f=rnd(3400,5200),n=10+Math.floor(Math.random()*10);for(let i=0;i<n;i++){voice(t,f*(i%2?1.12:.94),.035,{to:1.08,vol:.035,pan});t+=.05}},
+    // dove: low soft coo, three beats
+    (t,pan)=>{const f=rnd(430,560);voice(t,f,.34,{to:.9,vol:.06,vib:5,pan});voice(t+.4,f*1.04,.22,{to:.88,vol:.055,vib:5,pan});voice(t+.7,f*1.04,.22,{to:.88,vol:.05,vib:5,pan});voice(t+1.05,f*1.06,.45,{to:.82,vol:.055,vib:5,pan})},
+    // oriole-like whistle: liquid up-and-down glides
+    (t,pan)=>{const f=rnd(1500,2200),n=3+Math.floor(Math.random()*3);for(let i=0;i<n;i++){voice(t,f*rnd(.9,1.2),.2,{to:i%2?.6:1.7,vol:.05,vib:9,pan});t+=rnd(.24,.34)}},
+    // cuckoo: two falling notes
+    (t,pan)=>{const f=rnd(640,760);voice(t,f*1.12,.22,{to:.97,vol:.065,pan});voice(t+.34,f*.9,.3,{to:.97,vol:.065,pan})},
+    // songbird: a short melody, rising and falling
+    (t,pan)=>{const base=rnd(2000,3000),n=5+Math.floor(Math.random()*4);let f=base;for(let i=0;i<n;i++){f=Math.max(1500,Math.min(5200,f*rnd(.8,1.3)));voice(t,f,rnd(.08,.16),{to:rnd(.8,1.3),vol:.045,vib:rnd(0,18),pan});t+=rnd(.1,.19)}},
+    // tit: two-note "tee-chu" repeated
+    (t,pan)=>{const f=rnd(3500,4400);for(let i=0;i<3;i++){voice(t,f,.09,{to:.88,vol:.045,pan});voice(t+.13,f*.72,.1,{to:.9,vol:.04,pan});t+=.42}},
+    // thrush: slow flutey phrase with a pause
+    (t,pan)=>{const f=rnd(1800,2600);[1,1.25,.95,1.4,1.1].forEach((r,i)=>{voice(t+i*.22,f*r,.17,{to:rnd(.9,1.15),vol:.05,vib:7,pan})})},
+  ];
+  let lastSp=-1;
   function bird(){
     if(!on||!ac)return;
     if(valley.isNight()<.5){
-      const notes=2+Math.floor(Math.random()*3);let t=ac.currentTime+.02;const f0=rnd(2300,4300),gap=rnd(.09,.16);
-      for(let i=0;i<notes;i++){
-        const o=ac.createOscillator(),g=ac.createGain(),f=f0*rnd(.85,1.25),d=rnd(.07,.13);
-        o.type='sine';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*rnd(.7,1.5),t+d);
-        g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.05,t+.012);g.gain.exponentialRampToValueAtTime(.0008,t+d+.02);
-        o.connect(g);g.connect(master);o.start(t);o.stop(t+d+.04);t+=gap;
+      const calls=Math.random()<.4?2:1;
+      for(let c=0;c<calls;c++){
+        let k;do{k=Math.floor(Math.random()*SPECIES.length)}while(k===lastSp&&SPECIES.length>1);lastSp=k;
+        SPECIES[k](ac.currentTime+.03+c*rnd(.2,.9),rnd(-.8,.8));
       }
     }
-    birdT=setTimeout(bird,rnd(1400,4800));
+    birdT=setTimeout(bird,valley.isNight()<.5?rnd(700,2600):rnd(3000,6000));
   }
   /* the little girl's voice: speech synthesis, raised in pitch; the voices come from the visitor's device */
   const hasSpeech='speechSynthesis' in window&&'SpeechSynthesisUtterance' in window;
@@ -818,8 +947,9 @@ const go=document.getElementById('go');
     master.gain.cancelScheduledValues(ac.currentTime);master.gain.setTargetAtTime(on?1:0,ac.currentTime,.8);
     clearTimeout(birdT);clearTimeout(speechT);
     if(hasSpeech)speechSynthesis.cancel();
-    if(on){birdT=setTimeout(bird,900);speechT=setTimeout(say,1200)}
+    if(on){birdT=setTimeout(bird,500);speechT=setTimeout(say,1200)}
   });
+  if(hasSpeech){speechSynthesis.onvoiceschanged=()=>{};setInterval(()=>{if(on&&!document.hidden&&speechSynthesis.speaking&&!speechSynthesis.paused){speechSynthesis.pause();speechSynthesis.resume()}},9000)}
   document.addEventListener('visibilitychange',()=>{
     if(!ac||!on)return;
     if(document.hidden){ac.suspend();if(hasSpeech)speechSynthesis.pause()}
@@ -847,30 +977,131 @@ const go=document.getElementById('go');
   addEventListener('keydown',e=>{if(e.key==='Escape'&&sheet.classList.contains('open'))close()});
 })();
 
-/* ===== booking form ===== */
+/* ===== teacher + booking wizard (options come from /api/settings) ===== */
 (function(){
   const $=id=>document.getElementById(id);
   const form=$('bookForm'),done=$('done'),err=$('err'),summary=$('summary'),wa=$('wa'),copyBtn=$('copy'),note=$('copyNote'),submit=$('submit');
-  const daysBox=$('daysBox'),timesBox=$('timesBox');
-  function renderChips(box,name,items){
+  const daysBox=$('daysBox'),timesBox=$('timesBox'),plansBox=$('plansBox'),goalsBox=$('goalsBox');
+  const OPT={levels:['لا يعرف الإنجليزية بعد','يعرف الحروف والكلمات البسيطة','يقرأ كلمات وجملًا قصيرة','يقرأ ويتحدث بشكل متوسط','لا أعرف، أريد تقييمًا'],
+    goals:['تأسيس الحروف والأصوات','القراءة','المفردات','النطق والمحادثة','الكتابة والإملاء','مراجعة المنهج المدرسي','التحضير للاختبارات','حب اللغة والثقة'],
+    schools:['حكومي','لغات','دولي','تعليم منزلي'],sources:['واتساب','انستغرام','تيك توك','صديق أو قريب','بحث جوجل','أخرى'],
+    tzs:['الكويت','السعودية','الإمارات','قطر','البحرين','عُمان','مصر','أخرى']};
+  let PLANS=[],CUR='د.ك';
+  function renderChips(box,name,items,type,checkedFirst){
     box.textContent='';
-    items.forEach(v=>{const l=document.createElement('label');l.className='chip';const i=document.createElement('input');i.type='checkbox';i.name=name;i.value=v;const s=document.createElement('span');s.textContent=v;l.append(i,s);box.append(l)});
+    items.forEach((v,i)=>{const l=document.createElement('label');l.className='chip';const inp=document.createElement('input');inp.type=type||'checkbox';inp.name=name;inp.value=v;if(checkedFirst&&i===0)inp.checked=true;const s=document.createElement('span');s.textContent=v;l.append(inp,s);box.append(l)});
   }
+  function fillSelect(sel,items,blank){
+    sel.textContent='';
+    if(blank){const o=document.createElement('option');o.value='';o.textContent=blank;sel.append(o)}
+    items.forEach(v=>{const o=document.createElement('option');o.value=v;o.textContent=v;sel.append(o)});
+  }
+  function renderOptions(){
+    fillSelect($('level'),OPT.levels,'اختر المستوى');fillSelect($('school'),OPT.schools,'غير محدد');
+    fillSelect($('tz'),OPT.tzs);fillSelect($('source'),OPT.sources,'اختر');
+    const ag=$('age');ag.textContent='';const o0=document.createElement('option');o0.value='';o0.textContent='العمر';ag.append(o0);
+    for(let i=5;i<=13;i++){const o=document.createElement('option');o.value=String(i);o.textContent=i+' سنوات';ag.append(o)}
+    renderChips(goalsBox,'goal',OPT.goals);
+  }
+  function renderPlans(){
+    plansBox.textContent='';
+    if(!PLANS.length){plansBox.closest('fieldset').hidden=true;return}
+    plansBox.closest('fieldset').hidden=false;
+    PLANS.forEach((p,i)=>{
+      const l=document.createElement('label');l.className='chip';const inp=document.createElement('input');inp.type='radio';inp.name='plan';inp.value=p.name;if(i===0)inp.checked=true;
+      const s=document.createElement('span');s.textContent=p.name+(p.price>0?' · '+p.price+' '+CUR:'');l.append(inp,s);plansBox.append(l);
+    });
+    plansBox.addEventListener('change',planNote);planNote();
+  }
+  function planNote(){
+    const n=vals('plan')[0],p=PLANS.find(x=>x.name===n);
+    $('planNote').textContent=p?(p.lessons===1?'حصة واحدة لتتعرف على المعلمة ويتعرف الطفل على أسلوبها.':p.lessons+' حصص'+(p.price>0?' بسعر '+p.price+' '+CUR:' · السعر يُحدَّد عند التأكيد')):'';
+  }
+  renderOptions();
   renderChips(daysBox,'day',['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس']);
   renderChips(timesBox,'time',['3:00 م','4:00 م','5:00 م','6:00 م','7:00 م']);
   const showContact=()=>{$('contact').textContent=WHATSAPP?'واتساب: +'+WHATSAPP:''};
   showContact();
+  const sd=$('startDate');try{const d=new Date();sd.min=d.toISOString().slice(0,10)}catch(_){}
 
-  // settings from the control panel (days, times, WhatsApp number, announcement)
+  /* teacher card: animated counters */
+  function counter(el,txt){
+    const m=/^(\D*)(\d+)(\D*)$/.exec(txt);
+    if(!m||matchMedia('(prefers-reduced-motion: reduce)').matches){el.textContent=txt;return}
+    const to=+m[2],t0=performance.now();el.textContent=m[1]+'0'+m[3];
+    const io=new IntersectionObserver(es=>{if(!es[0].isIntersecting)return;io.disconnect();
+      const t0=performance.now();(function tick(t){const k=Math.min(1,(t-t0)/1100),e=1-Math.pow(1-k,3);el.textContent=m[1]+Math.round(to*e)+m[3];if(k<1)requestAnimationFrame(tick)})(t0)
+    },{root:null,threshold:.4});io.observe(el);
+  }
+  function showTeacher(t){
+    if(!t)return;
+    if(t.name)$('tName').textContent='المعلمة '+t.name;
+    if(t.title)$('tTitle').textContent=t.title;
+    if(t.years)$('tYears').textContent='خبرة +'+t.years+' سنوات';
+    const place=[t.city,t.area].filter(Boolean).join('، ');
+    if(place){$('tPlace').textContent=place;$('tWhere').textContent=place}
+    if(t.bio)$('tBio').textContent=t.bio;
+    const box=$('tStats');box.textContent='';
+    (t.stats||[]).forEach(s=>{const d=document.createElement('div');d.className='tstat';const b=document.createElement('b');const l=document.createElement('span');l.textContent=s.l;d.append(b,l);box.append(d);counter(b,String(s.n))});
+    if(t.mapQuery){
+      const q=encodeURIComponent(t.mapQuery);
+      $('tMap').dataset.src='https://www.google.com/maps?q='+q+'&hl=ar&z=13&output=embed';
+      $('tMapLink').href='https://www.google.com/maps/search/?api=1&query='+q;
+    }
+    lazyMap();
+  }
+  function lazyMap(){
+    const f=$('tMap');if(f.src||!f.dataset.src)return;
+    const io=new IntersectionObserver(es=>{if(es[0].isIntersecting){io.disconnect();f.src=f.dataset.src}},{rootMargin:'300px'});io.observe(f);
+  }
+  showTeacher({stats:[{n:'+10',l:'سنوات خبرة في تدريس الإنجليزية'},{n:'6',l:'صفوف ابتدائية، من الأول إلى السادس'},{n:'40',l:'دقيقة لكل حصة مباشرة'},{n:'1:1',l:'حصة فردية أو مجموعة صغيرة'}],bio:'معلمة لغة إنجليزية بخبرة تزيد على 10 سنوات في تدريس الأطفال، تعمل في الإسكندرية (منطقة البيطاش).',mapQuery:'البيطاش، الإسكندرية، مصر'});
+
   fetch('/api/settings',{headers:{accept:'application/json'}}).then(r=>r.ok?r.json():null).then(s=>{
     if(!s||!s.ok)return;
     if(Array.isArray(s.days)&&s.days.length)renderChips(daysBox,'day',s.days);
     if(Array.isArray(s.times)&&s.times.length)renderChips(timesBox,'time',s.times);
     if(s.whatsapp){WHATSAPP=String(s.whatsapp).replace(/\D/g,'');showContact()}
     if(s.announcement){const a=$('ann');a.textContent=s.announcement;a.hidden=false}
+    if(s.options){Object.keys(OPT).forEach(k=>{if(Array.isArray(s.options[k])&&s.options[k].length)OPT[k]=s.options[k]});renderOptions()}
+    if(s.currency)CUR=s.currency;
+    if(Array.isArray(s.plans))PLANS=s.plans;
+    renderPlans();
+    showTeacher(s.teacher);
   }).catch(()=>{});
 
   const vals=name=>[...document.querySelectorAll('input[name='+name+']:checked')].map(i=>i.value);
+
+  /* wizard */
+  let step=1;const bar=$('stepBar'),back=$('back'),next=$('next');
+  function go(n){
+    step=n;
+    form.querySelectorAll('.stepbox').forEach(b=>b.hidden=+b.dataset.step!==n);
+    [...bar.children].forEach(li=>{const s=+li.dataset.s;li.classList.toggle('on',s===n);li.classList.toggle('done',s<n)});
+    back.hidden=n===1;next.hidden=n===3;submit.hidden=n!==3;err.textContent='';
+  }
+  function check(n){
+    if(n===1){
+      if(!$('child').value.trim())return 'اكتب اسم الطفل.';
+      if(!$('age').value)return 'اختر عمر الطفل.';
+      if(!$('grade').value)return 'اختر الصف الدراسي.';
+      if(!$('level').value)return 'اختر مستوى الطفل الحالي.';
+    }
+    if(n===2){
+      if(!$('parent').value.trim())return 'اكتب اسم ولي الأمر.';
+      if($('phone').value.replace(/\D/g,'').length<8)return 'اكتب رقم واتساب صحيحًا، 8 أرقام على الأقل.';
+      const em=$('email').value.trim();if(em&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em))return 'البريد الإلكتروني غير صحيح.';
+    }
+    if(n===3){
+      if(!vals('day').length)return 'اختر يومًا واحدًا على الأقل.';
+      if(!vals('time').length)return 'اختر وقتًا واحدًا على الأقل.';
+      if(!$('consent').checked)return 'وافق على التواصل عبر واتساب لإكمال الحجز.';
+    }
+    return '';
+  }
+  next.addEventListener('click',()=>{const m=check(step);err.textContent=m;if(!m){go(step+1);bar.scrollIntoView({block:'nearest'})}});
+  back.addEventListener('click',()=>go(step-1));
+  form.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'&&step<3){e.preventDefault();next.click()}});
+
   let msg='';
   async function send(payload){
     const c=new AbortController(),tm=setTimeout(()=>c.abort(),9000);
@@ -884,22 +1115,24 @@ const go=document.getElementById('go');
   }
   form.addEventListener('submit',async e=>{
     e.preventDefault();
-    const child=$('child').value.trim(),grade=$('grade').value,parent=$('parent').value.trim(),phone=$('phone').value.trim();
-    const days=vals('day'),times=vals('time'),kind=vals('kind')[0]||'',notes=$('notes').value.trim();
-    let m='';
-    if(!child)m='اكتب اسم الطفل.';
-    else if(!grade)m='اختر الصف الدراسي.';
-    else if(!parent)m='اكتب اسم ولي الأمر.';
-    else if(phone.replace(/\D/g,'').length<8)m='اكتب رقم واتساب صحيحًا، 8 أرقام على الأقل.';
-    else if(!days.length)m='اختر يومًا واحدًا على الأقل.';
-    else if(!times.length)m='اختر وقتًا واحدًا على الأقل.';
-    err.textContent=m;if(m)return;
+    for(let n=1;n<=3;n++){const m=check(n);if(m){go(n);err.textContent=m;return}}
+    const v=id=>$(id).value.trim();
+    const plan=vals('plan')[0]||'',p=PLANS.find(x=>x.name===plan);
+    const payload={child:v('child'),age:$('age').value,grade:$('grade').value,level:$('level').value,school:$('school').value,goals:vals('goal'),
+      parent:v('parent'),phone:v('phone'),email:v('email'),tz:$('tz').value,source:$('source').value,
+      kind:vals('kind')[0]||'',plan,trial:p?p.lessons===1&&p.price===0:false,days:vals('day'),times:vals('time'),
+      start_date:$('startDate').value,siblings:$('siblings').value,notes:v('notes'),website:$('website').value};
     msg=['السلام عليكم، أرغب بحجز حصة إنجليزية على زووم.','',
-      'اسم الطفل: '+child,'الصف: '+grade,'ولي الأمر: '+parent,'واتساب: '+phone,
-      'نوع الحصة: '+kind,'الأيام المناسبة: '+days.join('، '),'الأوقات المناسبة (بتوقيت الكويت): '+times.join('، ')]
-      .concat(notes?['ملاحظات: '+notes]:[]).join('\n');
+      'اسم الطفل: '+payload.child+' ('+payload.age+' سنوات)','الصف: '+payload.grade,'المستوى: '+payload.level]
+      .concat(payload.goals.length?['الأهداف: '+payload.goals.join('، ')]:[])
+      .concat(['ولي الأمر: '+payload.parent,'واتساب: '+payload.phone,'الدولة: '+payload.tz,'نوع الحصة: '+payload.kind])
+      .concat(plan?['الباقة: '+plan]:[])
+      .concat(['الأيام المناسبة: '+payload.days.join('، '),'الأوقات المناسبة (بتوقيت الكويت): '+payload.times.join('، ')])
+      .concat(payload.start_date?['أقرب تاريخ للبدء: '+payload.start_date]:[])
+      .concat(+payload.siblings>1?['عدد الأطفال: '+payload.siblings]:[])
+      .concat(payload.notes?['ملاحظات: '+payload.notes]:[]).join('\n');
     submit.disabled=true;const label=submit.textContent;submit.textContent='جارٍ الإرسال…';
-    const res=await send({child,grade,parent,phone,kind,days,times,notes,website:$('website').value});
+    const res=await send(payload);
     submit.disabled=false;submit.textContent=label;
     if(res.validation){err.textContent=res.validation;return}
     summary.textContent=msg;
@@ -920,8 +1153,9 @@ const go=document.getElementById('go');
     catch(_){const r=document.createRange();r.selectNodeContents(summary);const s=getSelection();s.removeAllRanges();s.addRange(r);note.textContent='حدّدنا النص لك. انسخه بالضغط المطوّل أو Ctrl+C.'}
   });
   $('edit').addEventListener('click',()=>{
-    done.hidden=true;form.hidden=false;form.reset();err.textContent='';$('child').focus();
+    done.hidden=true;form.hidden=false;form.reset();renderPlans();go(1);$('child').focus();
   });
+  go(1);
 })();
 </script>
 </body>

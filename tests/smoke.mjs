@@ -265,4 +265,57 @@ await t('worker routes /api to handlers and everything else to static assets', a
   assert.equal((await wf('/api/admin/bookings', 'GET', null, { cookie: l.headers.get('set-cookie').split(';')[0] })).status, 200);
 });
 
+await t('richer booking fields are stored, validated and editable by the admin', async () => {
+  const phone = '55598765';
+  const cur = (await call(publicSettings.onRequestGet, req('/api/settings'))).data;
+  Object.assign(good, { days: [cur.days[0]], times: [cur.times[0]] });
+  const full = { ...good, phone, age: '8', level: 'يقرأ كلمات وجملًا قصيرة', goals: ['القراءة', 'النطق والمحادثة', 'غير موجود'], school: 'لغات', plan: 'حصة تجريبية', trial: true, email: 'mom@example.com', start_date: '2026-12-01', siblings: 2, tz: 'الكويت', source: 'انستغرام' };
+  const ok = await call(book.onRequestPost, req('/api/book', 'POST', full));
+  assert.equal(ok.res.status, 201, JSON.stringify(ok.data));
+  for (const bad of [{ age: '2' }, { level: 'x' }, { school: 'x' }, { plan: 'لا توجد' }, { email: 'not-an-email' }, { start_date: 'tomorrow' }, { tz: 'x' }, { source: 'x' }]) {
+    const { res } = await call(book.onRequestPost, req('/api/book', 'POST', { ...good, phone: '55511111', ...bad }));
+    assert.equal(res.status, 400, JSON.stringify(bad));
+  }
+  const l = await call(login.onRequestPost, req('/api/admin/login', 'POST', { password: 'correct horse' }));
+  const auth = { cookie: l.res.headers.get('set-cookie').split(';')[0] };
+  const list = await call(bookings.onRequestGet, req('/api/admin/bookings', 'GET', null, auth));
+  const row = list.data.bookings.find((b) => b.phone === phone);
+  assert.equal(row.age, '8');
+  assert.deepEqual(row.goals, ['القراءة', 'النطق والمحادثة']);
+  assert.equal(row.trial, 1);
+  assert.equal(row.siblings, 2);
+  assert.equal(row.lessons_total, 1);
+  assert.equal(row.pay_status, 'unpaid');
+  const patch = (body) => call(bookings.onRequestPatch, req('/api/admin/bookings', 'PATCH', { id: row.id, ...body }, auth));
+  assert.equal((await patch({ pay_status: 'paid', amount: 12.5, lessons_total: 8, lessons_done: 3, next_follow: '2026-12-02' })).res.status, 200);
+  assert.equal((await patch({ pay_status: 'weird' })).res.status, 400);
+  assert.equal((await patch({ amount: -4 })).res.status, 400);
+  assert.equal((await patch({ next_follow: 'soon' })).res.status, 400);
+  const after = (await call(bookings.onRequestGet, req('/api/admin/bookings', 'GET', null, auth))).data.bookings.find((b) => b.id === row.id);
+  assert.equal(after.pay_status, 'paid');
+  assert.equal(after.amount, 12.5);
+  assert.equal(after.lessons_done, 3);
+  assert.equal(after.next_follow, '2026-12-02');
+});
+await t('teacher profile and plans are public, editable and sanitized', async () => {
+  const pub = (await call(publicSettings.onRequestGet, req('/api/settings'))).data;
+  assert.equal(pub.teacher.name, 'يسمينا طارق العربي');
+  assert.equal(pub.teacher.area, 'البيطاش');
+  assert.ok(pub.teacher.stats.length >= 3);
+  assert.ok(pub.plans.length >= 2);
+  assert.ok(pub.options.goals.length > 3);
+  assert.ok(!('zoomLink' in pub));
+  const l = await call(login.onRequestPost, req('/api/admin/login', 'POST', { password: 'correct horse' }));
+  const auth = { cookie: l.res.headers.get('set-cookie').split(';')[0] };
+  const put = (body) => call(adminSettings.onRequestPut, req('/api/admin/settings', 'PUT', body, auth));
+  const r = await put({ teacherYears: 12, teacherStats: [{ n: '+300', l: 'طالب وطالبة' }, { n: '', l: 'فارغ' }], plans: [{ name: 'باقة 10', lessons: 10, price: 50 }], reminderTemplate: 'تذكير {child}' });
+  assert.equal(r.res.status, 200);
+  assert.equal(r.data.settings.teacherYears, 12);
+  assert.equal(r.data.settings.teacherStats.length, 1);
+  assert.equal(r.data.settings.plans[0].price, 50);
+  assert.equal((await put({ plans: [] })).res.status, 400);
+  assert.equal((await put({ teacherYears: 'abc' })).res.status, 400);
+  await put({ plans: [{ name: 'حصة تجريبية', lessons: 1, price: 0 }, { name: 'باقة 4 حصص', lessons: 4, price: 0 }], teacherStats: [{ n: '+10', l: 'سنوات خبرة' }, { n: '6', l: 'صفوف' }, { n: '40', l: 'دقيقة' }] });
+});
+
 console.log(`\n${n} checks passed`);

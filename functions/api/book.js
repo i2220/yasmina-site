@@ -23,8 +23,14 @@ export async function onRequestPost({ request, env }) {
     if (recent && recent.c >= 3) return fail('وصلنا عدة طلبات من هذا الرقم. سنتواصل معك قريبًا.', 429);
 
     const res = await db
-      .prepare('INSERT INTO bookings (child, grade, parent, phone, kind, days, times, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .bind(value.child, value.grade, value.parent, value.phone, value.kind, JSON.stringify(value.days), JSON.stringify(value.times), value.notes)
+      .prepare(
+        'INSERT INTO bookings (child, grade, parent, phone, kind, days, times, notes, age, level, goals, school, plan, trial, email, start_date, siblings, tz, source, lessons_total) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      )
+      .bind(
+        value.child, value.grade, value.parent, value.phone, value.kind, JSON.stringify(value.days), JSON.stringify(value.times), value.notes,
+        value.age, value.level, JSON.stringify(value.goals), value.school, value.plan, value.trial, value.email, value.start_date, value.siblings, value.tz, value.source,
+        (settings.plans.find((p) => p.name === value.plan) || {}).lessons || 0,
+      )
       .run();
     return json({ ok: true, id: res?.meta?.last_row_id ?? null }, 201);
   } catch (e) {

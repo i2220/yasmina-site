@@ -1,4 +1,4 @@
-import { NO_DB, STATUSES, ensureSchema, fail, getDb, guardAdmin, json, readJson } from '../../../src/lib.js';
+import { NO_DB, PAY, STATUSES, ensureSchema, fail, getDb, guardAdmin, json, readJson } from '../../../src/lib.js';
 
 const parseList = (s) => {
   try {
@@ -38,7 +38,7 @@ export async function onRequestGet({ request, env }) {
   const grouped = await db.prepare('SELECT status, COUNT(*) AS c FROM bookings GROUP BY status').all();
   for (const r of grouped.results || []) if (r.status in counts) counts[r.status] = r.c;
 
-  const bookings = (results || []).map((r) => ({ ...r, days: parseList(r.days), times: parseList(r.times) }));
+  const bookings = (results || []).map((r) => ({ ...r, days: parseList(r.days), times: parseList(r.times), goals: parseList(r.goals) }));
   return json({ ok: true, bookings, counts });
 }
 
@@ -63,6 +63,27 @@ export async function onRequestPatch({ request, env }) {
   if (b.admin_note !== undefined) {
     sets.push('admin_note = ?');
     args.push(String(b.admin_note).slice(0, 500));
+  }
+  if (b.pay_status !== undefined) {
+    if (!PAY.includes(b.pay_status)) return fail('حالة الدفع غير صالحة.');
+    sets.push('pay_status = ?');
+    args.push(b.pay_status);
+  }
+  for (const [key, max] of [['amount', 1_000_000], ['lessons_total', 500], ['lessons_done', 500]]) {
+    if (b[key] === undefined) continue;
+    const n = Number(b[key]);
+    if (!Number.isFinite(n) || n < 0 || n > max) return fail('قيمة رقمية غير صالحة.');
+    sets.push(`${key} = ?`);
+    args.push(key === 'amount' ? Math.round(n * 100) / 100 : Math.round(n));
+  }
+  if (b.next_follow !== undefined) {
+    if (b.next_follow !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(b.next_follow)) return fail('تاريخ المتابعة غير صالح.');
+    sets.push('next_follow = ?');
+    args.push(b.next_follow);
+  }
+  if (b.plan !== undefined) {
+    sets.push('plan = ?');
+    args.push(String(b.plan).slice(0, 40));
   }
   if (!sets.length) return fail('لا يوجد ما يُحدَّث.');
   await db.prepare(`UPDATE bookings SET ${sets.join(', ')} WHERE id = ?`).bind(...args, id).run();
