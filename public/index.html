@@ -148,6 +148,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--cream);outline-o
 }
 @media (prefers-reduced-motion:reduce){.loader span{animation:none}}
 /* confirmation */
+.walink{display:inline-flex;align-items:center;min-height:44px;padding:0 20px;border-radius:99px;background:#25d366;color:#06361b;font-weight:800;direction:ltr;text-decoration:none}
+
 .done{width:100%;min-width:0;max-width:100%;text-align:center;justify-items:center}
 .okmark svg{width:92px;height:92px;fill:none;stroke:var(--cream);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
 .okmark circle{stroke-dasharray:151;stroke-dashoffset:151;animation:draw .8s ease forwards}
@@ -192,6 +194,7 @@ em{font-style:normal;color:var(--muted);font-weight:500;font-size:14px}
 .steps2 li.done{color:var(--cream);border-color:rgba(255,229,0,.6)}
 .stepbox{display:grid;gap:22px;animation:fadein .35s ease}
 .stepbox[hidden]{display:none}
+[hidden]{display:none!important}
 @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .consent{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:16px;border:1px solid var(--line);cursor:pointer}
 .consent input{width:22px;height:22px;margin-top:4px;accent-color:#ffe500;flex:none}
@@ -1044,7 +1047,7 @@ const go=document.getElementById('go');
   renderOptions();
   renderChips(daysBox,'day',['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس']);
   renderChips(timesBox,'time',['3:00 م','4:00 م','5:00 م','6:00 م','7:00 م']);
-  const showContact=()=>{$('contact').textContent=WHATSAPP?'واتساب: +'+WHATSAPP:''};
+  const showContact=()=>{const c=$('contact');c.textContent='';if(!WHATSAPP)return;const a=document.createElement('a');a.href='https://wa.me/'+WHATSAPP;a.target='_blank';a.rel='noopener';a.className='walink';a.textContent='راسلنا على واتساب · +'+WHATSAPP;c.append(a)};
   showContact();
   const sd=$('startDate');try{const d=new Date();sd.min=d.toISOString().slice(0,10)}catch(_){}
 

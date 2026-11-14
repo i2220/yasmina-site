@@ -131,6 +131,15 @@ export function ensureSchema(db) {
         )`),
         db.prepare('CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status, id)'),
         db.prepare('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)'),
+        db.prepare(`CREATE TABLE IF NOT EXISTS docs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          created_at TEXT NOT NULL DEFAULT (datetime('now')),
+          kind TEXT NOT NULL,
+          booking_id INTEGER NOT NULL DEFAULT 0,
+          title TEXT NOT NULL DEFAULT '',
+          data TEXT NOT NULL DEFAULT '{}'
+        )`),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_docs_kind ON docs(kind, id)'),
       ])
       .then(() => migrate(db))
       .catch((e) => {
@@ -348,4 +357,13 @@ export async function readJson(request) {
   } catch {
     return null;
   }
+}
+
+/* international WhatsApp number: digits only; a short local number gets the default country code */
+export function waNumber(num, cc) {
+  let d = String(num || '').replace(/\D/g, '').replace(/^00/, '');
+  const c = String(cc || '').replace(/\D/g, '');
+  if (!d) return '';
+  if (c && d.length <= 9 && !d.startsWith(c)) d = c + d.replace(/^0+/, '');
+  return d;
 }

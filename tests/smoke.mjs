@@ -8,6 +8,7 @@ import * as me from '../functions/api/admin/me.js';
 import * as bookings from '../functions/api/admin/bookings.js';
 import * as adminSettings from '../functions/api/admin/settings.js';
 import worker from '../src/worker.js';
+import * as docsRoute from '../functions/api/admin/docs.js';
 import * as zoomRoute from '../functions/api/admin/zoom.js';
 import { resetZoomCache } from '../src/zoom.js';
 import { _resetSchema } from '../src/lib.js';
@@ -316,6 +317,33 @@ await t('teacher profile and plans are public, editable and sanitized', async ()
   assert.equal((await put({ plans: [] })).res.status, 400);
   assert.equal((await put({ teacherYears: 'abc' })).res.status, 400);
   await put({ plans: [{ name: 'حصة تجريبية', lessons: 1, price: 0 }, { name: 'باقة 4 حصص', lessons: 4, price: 0 }], teacherStats: [{ n: '+10', l: 'سنوات خبرة' }, { n: '6', l: 'صفوف' }, { n: '40', l: 'دقيقة' }] });
+});
+
+await t('reports and invoices are stored for the admin only', async () => {
+  const anon = await call(docsRoute.onRequestGet, req('/api/admin/docs?kind=report'));
+  assert.equal(anon.res.status, 401);
+  const l = await call(login.onRequestPost, req('/api/admin/login', 'POST', { password: 'correct horse' }));
+  const auth = { cookie: l.res.headers.get('set-cookie').split(';')[0] };
+  const post = (b) => call(docsRoute.onRequestPost, req('/api/admin/docs', 'POST', b, auth));
+  const a = await post({ kind: 'report', booking_id: 1, title: 'سارة', data: { skills: { speaking: 4 } } });
+  assert.equal(a.res.status, 201);
+  assert.equal((await post({ kind: 'bad', data: {} })).res.status, 400);
+  assert.equal((await post({ kind: 'invoice', data: [] })).res.status, 400);
+  const up = await post({ id: a.data.id, kind: 'report', booking_id: 1, title: 'سارة 2', data: { skills: { speaking: 5 } } });
+  assert.equal(up.res.status, 200);
+  const g = await call(docsRoute.onRequestGet, req('/api/admin/docs?kind=report&booking_id=1', 'GET', undefined, auth));
+  assert.equal(g.data.docs.length, 1);
+  assert.equal(g.data.docs[0].data.skills.speaking, 5);
+  const inv = await post({ kind: 'invoice', title: 'YS-INV-0001', data: { total: 10 } });
+  assert.equal((await call(docsRoute.onRequestGet, req('/api/admin/docs?kind=invoice', 'GET', undefined, auth))).data.docs.length, 1);
+  await call(docsRoute.onRequestDelete, req('/api/admin/docs?id=' + inv.data.id, 'DELETE', undefined, auth));
+  assert.equal((await call(docsRoute.onRequestGet, req('/api/admin/docs?kind=invoice', 'GET', undefined, auth))).data.docs.length, 0);
+});
+await t('whatsapp numbers get the country code when local', async () => {
+  const { waNumber } = await import('../src/lib.js');
+  assert.equal(waNumber('5551 2345', '965'), '96555512345');
+  assert.equal(waNumber('+965 5551 2345', '965'), '96555512345');
+  assert.equal(waNumber('', '965'), '');
 });
 
 console.log(`\n${n} checks passed`);

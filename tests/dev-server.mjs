@@ -21,6 +21,9 @@ const routes = {
   'DELETE /api/admin/bookings': ['functions/api/admin/bookings.js', 'onRequestDelete'],
   'GET /api/admin/settings': ['functions/api/admin/settings.js', 'onRequestGet'],
   'PUT /api/admin/settings': ['functions/api/admin/settings.js', 'onRequestPut'],
+  'GET /api/admin/docs': ['functions/api/admin/docs.js', 'onRequestGet'],
+  'POST /api/admin/docs': ['functions/api/admin/docs.js', 'onRequestPost'],
+  'DELETE /api/admin/docs': ['functions/api/admin/docs.js', 'onRequestDelete'],
   'POST /api/admin/zoom': ['functions/api/admin/zoom.js', 'onRequestPost'],
 };
 

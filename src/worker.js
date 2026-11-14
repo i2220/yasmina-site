@@ -6,6 +6,7 @@ import * as logout from '../functions/api/admin/logout.js';
 import * as me from '../functions/api/admin/me.js';
 import * as bookings from '../functions/api/admin/bookings.js';
 import * as adminSettings from '../functions/api/admin/settings.js';
+import * as docs from '../functions/api/admin/docs.js';
 import * as zoom from '../functions/api/admin/zoom.js';
 import { fail } from './lib.js';
 
@@ -20,6 +21,9 @@ const routes = {
   'DELETE /api/admin/bookings': bookings.onRequestDelete,
   'GET /api/admin/settings': adminSettings.onRequestGet,
   'PUT /api/admin/settings': adminSettings.onRequestPut,
+  'GET /api/admin/docs': docs.onRequestGet,
+  'POST /api/admin/docs': docs.onRequestPost,
+  'DELETE /api/admin/docs': docs.onRequestDelete,
   'POST /api/admin/zoom': zoom.onRequestPost,
 };
 
