@@ -11,10 +11,11 @@ export const resetZoomCache = () => {
 
 async function accessToken(env) {
   if (cache.token && cache.exp > Date.now() + 60_000) return cache.token;
-  const basic = btoa(`${env.ZOOM_CLIENT_ID}:${env.ZOOM_CLIENT_SECRET}`);
+  const id = String(env.ZOOM_CLIENT_ID || '').trim(), secret = String(env.ZOOM_CLIENT_SECRET || '').trim(), acc = String(env.ZOOM_ACCOUNT_ID || '').trim();
+  const basic = btoa(`${id}:${secret}`);
   let res;
   try {
-    res = await fetch(`https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${encodeURIComponent(env.ZOOM_ACCOUNT_ID)}`, {
+    res = await fetch(`https://zoom.us/oauth/token?grant_type=account_credentials&account_id=${encodeURIComponent(acc)}`, {
       method: 'POST',
       headers: { authorization: `Basic ${basic}`, 'content-type': 'application/x-www-form-urlencoded' },
     });
@@ -23,7 +24,8 @@ async function accessToken(env) {
   }
   const j = await res.json().catch(() => ({}));
   if (!res.ok || !j.access_token) {
-    throw new ZoomError('رفض زووم بيانات الربط. تحقق من ZOOM_ACCOUNT_ID وZOOM_CLIENT_ID وZOOM_CLIENT_SECRET وأن التطبيق مفعّل.');
+    const why = [j.error, j.reason].filter(Boolean).join(' - ');
+    throw new ZoomError('رفض زووم بيانات الربط' + (why ? ' (' + why + ')' : '') + '. تحقق من القيم الثلاث ومن تفعيل التطبيق Activate.');
   }
   cache = { token: j.access_token, exp: Date.now() + (Number(j.expires_in) || 3600) * 1000 };
   return cache.token;
