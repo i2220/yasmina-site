@@ -1,6 +1,7 @@
 {
   "name": "yasmina-site",
   "main": "src/worker.js",
+  "keep_vars": true,
   "compatibility_date": "2025-01-01",
   "assets": {
     "directory": "./public",
