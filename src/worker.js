@@ -7,6 +7,9 @@ import * as me from '../functions/api/admin/me.js';
 import * as bookings from '../functions/api/admin/bookings.js';
 import * as adminSettings from '../functions/api/admin/settings.js';
 import * as docs from '../functions/api/admin/docs.js';
+import * as stuLogin from '../functions/api/student/login.js';
+import * as stuLogout from '../functions/api/student/logout.js';
+import * as stuMe from '../functions/api/student/me.js';
 import * as zoom from '../functions/api/admin/zoom.js';
 import { fail } from './lib.js';
 
@@ -25,6 +28,9 @@ const routes = {
   'POST /api/admin/docs': docs.onRequestPost,
   'DELETE /api/admin/docs': docs.onRequestDelete,
   'POST /api/admin/zoom': zoom.onRequestPost,
+  'POST /api/student/login': stuLogin.onRequestPost,
+  'POST /api/student/logout': stuLogout.onRequestPost,
+  'GET /api/student/me': stuMe.onRequestGet,
 };
 
 export default {

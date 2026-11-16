@@ -1,4 +1,4 @@
-import { NO_DB, PAY, STATUSES, ensureSchema, fail, getDb, guardAdmin, json, readJson } from '../../../src/lib.js';
+import { NO_DB, PAY, STATUSES, ensureAccounts, ensureSchema, fail, getDb, guardAdmin, json, readJson } from '../../../src/lib.js';
 
 const parseList = (s) => {
   try {
@@ -17,6 +17,7 @@ export async function onRequestGet({ request, env }) {
   if (!db) return NO_DB();
   await ensureSchema(db);
 
+  await ensureAccounts(db);
   const url = new URL(request.url);
   const status = url.searchParams.get('status') || '';
   const q = (url.searchParams.get('q') || '').trim().slice(0, 60);
@@ -80,6 +81,12 @@ export async function onRequestPatch({ request, env }) {
     if (b.next_follow !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(b.next_follow)) return fail('تاريخ المتابعة غير صالح.');
     sets.push('next_follow = ?');
     args.push(b.next_follow);
+  }
+  if (b.stu_pass !== undefined) {
+    const pw = String(b.stu_pass).trim();
+    if (!/^[A-Za-z0-9]{4,12}$/.test(pw)) return fail('كلمة المرور من 4 إلى 12 حرفًا أو رقمًا إنجليزيًا.');
+    sets.push('stu_pass = ?', 'stu_fails = 0', 'stu_lock = 0');
+    args.push(pw);
   }
   if (b.plan !== undefined) {
     sets.push('plan = ?');

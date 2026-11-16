@@ -49,11 +49,17 @@
     });
     return box;
   }
-  function rate(label, obj, key, onchange) {
-    const r = el('div', 'rate'), st = el('div', 'stars'); r.append(el('b', '', label), st);
+  function rate(label, obj, key, d, grp) {
+    d.show = d.show || {};
+    const id = grp + '.' + key, r = el('div', 'rate'), st = el('div', 'stars');
+    const sw = el('label', 'shw'), cb = el('input'); cb.type = 'checkbox';
+    sw.append(cb, el('span', '', 'إظهار في التقرير'));
+    r.append(el('b', '', label), st, sw);
     const btns = [];
-    const paint = () => btns.forEach((b, i) => b.setAttribute('aria-pressed', String(Number(obj[key]) === i)));
-    for (let i = 1; i <= 5; i++) { const b = el('button', '', String(i)); b.type = 'button'; b.addEventListener('click', () => { obj[key] = obj[key] === i ? 0 : i; paint(); onchange && onchange(); }); btns[i] = b; st.append(b); }
+    const sync = () => { cb.checked = Number(obj[key]) > 0 && d.show[id] !== false; };
+    const paint = () => { btns.forEach((b, i) => b.setAttribute('aria-pressed', String(Number(obj[key]) === i))); sync(); };
+    for (let i = 1; i <= 5; i++) { const b = el('button', '', String(i)); b.type = 'button'; b.addEventListener('click', () => { obj[key] = obj[key] === i ? 0 : i; d.show[id] = obj[key] > 0; paint(); }); btns[i] = b; st.append(b); }
+    cb.addEventListener('change', () => { d.show[id] = cb.checked; if (cb.checked && !(Number(obj[key]) > 0)) { YS.toast('اختر تقييمًا من 1 إلى 5 أولًا', true); cb.checked = false; d.show[id] = false; } });
     btns[0] = { setAttribute() {} }; paint(); return r;
   }
   const brand = () => {
@@ -82,7 +88,7 @@
   const IMPROVE = ['نطق بعض الأصوات', 'القراءة بصوت عالٍ', 'الإملاء', 'تكوين الجمل', 'الثقة في التحدث', 'التركيز', 'الاستماع', 'حفظ المفردات', 'الالتزام بالواجب', 'سرعة القراءة'];
   const TIPS = ['مراجعة المفردات 10 دقائق يوميًا', 'القراءة قبل النوم', 'محتوى إنجليزي مناسب للعمر', 'التحدث بالإنجليزية في البيت', 'الالتزام بالواجب في موعده', 'تهيئة مكان هادئ للحصة', 'الحضور في الموعد'];
   const blankReport = () => ({ bookingId: 0, student: '', grade: '', age: '', parent: '', phone: '', date: todayStr(), sessionNo: '', duration: '', topic: '', attendance: 'حضر في الوقت', objectives: '',
-    skills: {}, behavior: {}, level: '', progress: 'كما هو متوقع', homeworkStatus: 'لا يوجد', score: '', newWords: '', mastered: '', strengths: [], strengthsNote: '', improve: [], improveNote: '',
+    skills: {}, behavior: {}, show: {}, publish: true, level: '', progress: 'كما هو متوقع', homeworkStatus: 'لا يوجد', score: '', newWords: '', mastered: '', strengths: [], strengthsNote: '', improve: [], improveNote: '',
     homework: '', nextPlan: '', parentTips: [], parentNote: '', private: '', code: '' });
   const LEVELS = ['مبتدئ', 'مبتدئ متقدم', 'متوسط', 'متوسط متقدم', 'متقدم'];
 
@@ -126,11 +132,11 @@
     p1.append(g1, fld('أهداف الحصة', obj)); form.append(p1);
 
     // 2 skills
-    const p2 = panel('تقييم المهارات (من 1 إلى 5، اتركها فارغة إن لم تُقيَّم)');
-    D.SKILLS.forEach(([k, l]) => p2.append(rate(l, d.skills, k)));
+    const p2 = panel('تقييم المهارات (ضع علامة ✓ بجانب ما تريد إظهاره في التقرير)');
+    D.SKILLS.forEach(([k, l]) => p2.append(rate(l, d.skills, k, d, 'skills')));
     form.append(p2);
     // 3 behaviour
-    const p3 = panel('السلوك والتفاعل'); D.BEHAV.forEach(([k, l]) => p3.append(rate(l, d.behavior, k))); form.append(p3);
+    const p3 = panel('السلوك والتفاعل'); D.BEHAV.forEach(([k, l]) => p3.append(rate(l, d.behavior, k, d, 'behavior'))); form.append(p3);
 
     // 4 level
     const p4 = panel('المستوى والنتيجة'), g4 = el('div', 'g2');
@@ -150,7 +156,10 @@
     const p7 = panel('الواجب والخطة القادمة');
     p7.append(fld('الواجب المنزلي', bind(ta(d.homework, 'مثال: كتابة الحروف A–F مرتين وقراءة 5 كلمات', 400), 'homework')), fld('خطة الحصة القادمة', bind(ta(d.nextPlan, 'مثال: مراجعة A–F ثم البدء بالحروف G–L', 400), 'nextPlan'))); form.append(p7);
     const p8 = panel('توصيات لولي الأمر'); p8.append(chipBox(TIPS, d.parentTips)); p8.append(fld('رسالة شخصية لولي الأمر (اختياري)', bind(ta(d.parentNote, '', 500), 'parentNote'))); form.append(p8);
-    const p9 = panel('ملاحظات خاصة بك (لا تظهر في PDF)'); p9.append(bind(ta(d.private, 'لك وحدك: ظروف الطفل، أمور للمتابعة…', 600), 'private')); form.append(p9);
+    const p9 = panel('ملاحظات خاصة بك (لا تظهر في PDF)'); p9.append(bind(ta(d.private, 'لك وحدك: ظروف الطفل، أمور للمتابعة…', 600), 'private'));
+    const pl = el('label', 'consent'), pc = el('input'); pc.type = 'checkbox'; pc.checked = d.publish !== false; pc.addEventListener('change', () => { d.publish = pc.checked; });
+    pl.append(pc, el('span', '', 'إظهار هذا التقرير في حساب الطالب (يستطيع ولي الأمر الاطلاع عليه وتنزيله)')); pl.style.cssText = 'display:flex;gap:10px;align-items:center;padding:8px 0';
+    p9.append(pl); form.append(p9);
 
     const pv = el('div', 'pv'); pv.id = 'rpv';
     const bar = el('div', 'dbar');

@@ -25,6 +25,9 @@ const routes = {
   'POST /api/admin/docs': ['functions/api/admin/docs.js', 'onRequestPost'],
   'DELETE /api/admin/docs': ['functions/api/admin/docs.js', 'onRequestDelete'],
   'POST /api/admin/zoom': ['functions/api/admin/zoom.js', 'onRequestPost'],
+  'POST /api/student/login': ['functions/api/student/login.js', 'onRequestPost'],
+  'POST /api/student/logout': ['functions/api/student/logout.js', 'onRequestPost'],
+  'GET /api/student/me': ['functions/api/student/me.js', 'onRequestGet'],
 };
 
 // ZOOM_MOCK=1 pretends to be Zoom so the panel can be tried without real credentials

@@ -27,6 +27,8 @@ export const DEFAULTS = {
   teacherCity: 'الإسكندرية',
   teacherArea: 'البيطاش',
   mapQuery: 'البيطاش، الإسكندرية، مصر',
+  teacherPhoto: '',
+  teacherEdu: '',
   teacherBio:
     'معلمة لغة إنجليزية بخبرة تزيد على 10 سنوات في تدريس الأطفال، تعمل في الإسكندرية (منطقة البيطاش). تقدّم حصصًا مباشرة عبر زووم لطلاب المرحلة الابتدائية بأسلوب ممتع ومنظّم، وتتابع كل طفل على حدة.',
   teacherStats: [
@@ -45,6 +47,8 @@ export const DEFAULTS = {
   followTemplate: 'السلام عليكم {parent}، وصلنا طلب حجز حصة إنجليزية لـ {child} ({grade}). هل ما زلتم مهتمين؟ يسعدنا تحديد موعد مناسب لكم.',
   cancelTemplate: 'السلام عليكم {parent}، تم إلغاء حصة {child} المقررة {day} الساعة {time}. يسعدنا إعادة الجدولة في الوقت الذي يناسبكم.',
   thanksTemplate: 'شكرًا لكم {parent} على حضور {child} اليوم. نتمنى أن تكون الحصة ممتعة، وسنرسل لكم ملاحظات التقدّم قريبًا.',
+  accountTemplate:
+    'السلام عليكم {parent}، هذه بيانات دخول حساب {child} لمتابعة الحصص والتقارير والتقدّم:\nالرابط: {link}\nاسم المستخدم: {user}\nكلمة المرور: {pass}',
   confirmTemplate:
     'السلام عليكم {parent}، تم تأكيد حصة {child} ({grade}).\nالموعد: {day} الساعة {time} بتوقيت الكويت.\nرابط زووم: {zoom}\nنتمنى لطفلك حصة ممتعة.',
 };
@@ -97,6 +101,10 @@ async function migrate(db) {
     ['lessons_total', 'INTEGER NOT NULL DEFAULT 0'],
     ['lessons_done', 'INTEGER NOT NULL DEFAULT 0'],
     ['next_follow', "TEXT NOT NULL DEFAULT ''"],
+    ['stu_user', "TEXT NOT NULL DEFAULT ''"],
+    ['stu_pass', "TEXT NOT NULL DEFAULT ''"],
+    ['stu_fails', 'INTEGER NOT NULL DEFAULT 0'],
+    ['stu_lock', 'INTEGER NOT NULL DEFAULT 0'],
   ];
   // Look at what the table already has and add only the missing columns (no reliance on error wording).
   const info = await db.prepare('PRAGMA table_info(bookings)').all();
@@ -200,13 +208,20 @@ export function sanitizeSettings(input) {
     s.times = t;
   }
   if ('confirmTemplate' in input) s.confirmTemplate = clean(input.confirmTemplate, 600);
-  for (const k of ['reminderTemplate', 'followTemplate', 'cancelTemplate', 'thanksTemplate']) if (k in input) s[k] = clean(input[k], 600);
+  for (const k of ['reminderTemplate', 'followTemplate', 'cancelTemplate', 'thanksTemplate', 'accountTemplate']) if (k in input) s[k] = clean(input[k], 600);
   if ('currency' in input) s.currency = clean(input.currency, 8);
   if ('teacherName' in input) s.teacherName = clean(input.teacherName, 60);
   if ('teacherTitle' in input) s.teacherTitle = clean(input.teacherTitle, 80);
   if ('teacherCity' in input) s.teacherCity = clean(input.teacherCity, 40);
   if ('teacherArea' in input) s.teacherArea = clean(input.teacherArea, 40);
   if ('mapQuery' in input) s.mapQuery = clean(input.mapQuery, 120);
+  if ('teacherEdu' in input) s.teacherEdu = clean(input.teacherEdu, 160);
+  if ('teacherPhoto' in input) {
+    const ph = String(input.teacherPhoto || '');
+    if (ph && !/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(ph)) throw new Error('الصورة غير صالحة.');
+    if (ph.length > 180000) throw new Error('الصورة كبيرة جدًا.');
+    s.teacherPhoto = ph;
+  }
   if ('teacherBio' in input) s.teacherBio = clean(input.teacherBio, 700);
   if ('teacherYears' in input) {
     const y = Math.round(Number(input.teacherYears));
@@ -366,4 +381,41 @@ export function waNumber(num, cc) {
   if (!d) return '';
   if (c && d.length <= 9 && !d.startsWith(c)) d = c + d.replace(/^0+/, '');
   return d;
+}
+
+/* ---------- student accounts ---------- */
+const STU_COOKIE = 'ys_stu';
+const STU_MS = 30 * 24 * 60 * 60 * 1000;
+export const studentUser = (id) => 'ys' + (1000 + Number(id));
+export const normUser = (u) => String(u || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+export function newPin() {
+  const a = new Uint32Array(1);
+  crypto.getRandomValues(a);
+  return String(10000 + (a[0] % 90000));
+}
+// confirmed (or finished) bookings get a login automatically
+export async function ensureAccounts(db) {
+  const { results } = await db.prepare("SELECT id FROM bookings WHERE status IN ('confirmed','done') AND stu_user = ''").all();
+  for (const r of results || []) {
+    await db.prepare("UPDATE bookings SET stu_user = ?, stu_pass = ? WHERE id = ? AND stu_user = ''").bind(studentUser(r.id), newPin(), r.id).run();
+  }
+}
+export async function studentCookie(env, request, id) {
+  const exp = String(Date.now() + STU_MS);
+  const body = `${id}.${exp}`;
+  const sig = b64u(await hmac(secretOf(env) + ':student', body));
+  const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
+  return `${STU_COOKIE}=${body}.${sig}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${STU_MS / 1000}${secure}`;
+}
+export function clearStudentCookie(request) {
+  const secure = new URL(request.url).protocol === 'https:' ? '; Secure' : '';
+  return `${STU_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure}`;
+}
+export async function studentId(request, env) {
+  const secret = secretOf(env);
+  if (!secret) return 0;
+  const parts = readCookie(request, STU_COOKIE).split('.');
+  if (parts.length !== 3 || !/^\d+$/.test(parts[0]) || !/^\d+$/.test(parts[1]) || Number(parts[1]) < Date.now()) return 0;
+  const expected = b64u(await hmac(secret + ':student', `${parts[0]}.${parts[1]}`));
+  return sameBytes(enc.encode(expected), enc.encode(parts[2])) ? Number(parts[0]) : 0;
 }

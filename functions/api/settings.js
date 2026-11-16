@@ -9,7 +9,7 @@ export async function onRequestGet({ env }) {
     return json({
       ok: true, whatsapp: waNumber(s.whatsapp, s.countryCode), days: s.days, times: s.times, announcement: s.announcement,
       currency: s.currency, plans: s.plans,
-      teacher: { name: s.teacherName, title: s.teacherTitle, years: s.teacherYears, city: s.teacherCity, area: s.teacherArea, bio: s.teacherBio, stats: s.teacherStats, mapQuery: s.mapQuery },
+      teacher: { name: s.teacherName, title: s.teacherTitle, years: s.teacherYears, city: s.teacherCity, area: s.teacherArea, bio: s.teacherBio, photo: s.teacherPhoto, edu: s.teacherEdu, stats: s.teacherStats, mapQuery: s.mapQuery },
       options: { levels: LEVELS, goals: GOALS, schools: SCHOOLS, sources: SOURCES, tzs: TZS },
     }, 200, {
       'cache-control': 'public, max-age=30',

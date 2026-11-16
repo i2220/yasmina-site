@@ -9,6 +9,8 @@ import * as bookings from '../functions/api/admin/bookings.js';
 import * as adminSettings from '../functions/api/admin/settings.js';
 import worker from '../src/worker.js';
 import * as docsRoute from '../functions/api/admin/docs.js';
+import * as stuLogin from '../functions/api/student/login.js';
+import * as stuMe from '../functions/api/student/me.js';
 import * as zoomRoute from '../functions/api/admin/zoom.js';
 import { resetZoomCache } from '../src/zoom.js';
 import { _resetSchema } from '../src/lib.js';
@@ -344,6 +346,44 @@ await t('whatsapp numbers get the country code when local', async () => {
   assert.equal(waNumber('5551 2345', '965'), '96555512345');
   assert.equal(waNumber('+965 5551 2345', '965'), '96555512345');
   assert.equal(waNumber('', '965'), '');
+});
+
+await t('student account is created on confirmation and sees only its own published reports', async () => {
+  const l = await call(login.onRequestPost, req('/api/admin/login', 'POST', { password: 'correct horse' }));
+  const auth = { cookie: l.res.headers.get('set-cookie').split(';')[0] };
+  const cur = (await call(publicSettings.onRequestGet, req('/api/settings'))).data;
+  const ok = await call(book.onRequestPost, req('/api/book', 'POST', { ...good, phone: '55577777', child: 'ليلى', days: [cur.days[0]], times: [cur.times[0]] }));
+  assert.equal(ok.res.status, 201);
+  let list = (await call(bookings.onRequestGet, req('/api/admin/bookings', 'GET', null, auth))).data.bookings;
+  const row = list.find((b) => b.phone === '55577777');
+  assert.equal(row.stu_user, '', 'no account before confirmation');
+  await call(bookings.onRequestPatch, req('/api/admin/bookings', 'PATCH', { id: row.id, status: 'confirmed', lessons_total: 8, lessons_done: 2 }, auth));
+  list = (await call(bookings.onRequestGet, req('/api/admin/bookings', 'GET', null, auth))).data.bookings;
+  const acc = list.find((b) => b.id === row.id);
+  assert.match(acc.stu_user, /^ys\d{4}$/);
+  assert.match(acc.stu_pass, /^\d{5}$/);
+  const post = (path, b, headers) => call(docsRoute.onRequestPost, req(path, 'POST', b, headers));
+  await post('/api/admin/docs', { kind: 'report', booking_id: row.id, title: 'a', data: { student: 'ليلى', private: 'سر', skills: { speaking: 4 } } }, auth);
+  await post('/api/admin/docs', { kind: 'report', booking_id: row.id, title: 'b', data: { student: 'ليلى', publish: false } }, auth);
+  await post('/api/admin/docs', { kind: 'report', booking_id: row.id + 99, title: 'c', data: { student: 'غيرها' } }, auth);
+  const bad = await call(stuLogin.onRequestPost, req('/api/student/login', 'POST', { username: acc.stu_user, password: '00000' }));
+  assert.equal(bad.res.status, 401);
+  const good1 = await call(stuLogin.onRequestPost, req('/api/student/login', 'POST', { username: 'YS-' + (row.id + 1000), password: acc.stu_pass }));
+  assert.equal(good1.res.status, 200, JSON.stringify(good1.data));
+  const sc = { cookie: good1.res.headers.get('set-cookie').split(';')[0] };
+  assert.equal((await call(stuMe.onRequestGet, req('/api/student/me'))).res.status, 401);
+  const m = await call(stuMe.onRequestGet, req('/api/student/me', 'GET', null, sc));
+  assert.equal(m.data.student.lessons_left, 6);
+  assert.equal(m.data.reports.length, 1);
+  assert.equal(m.data.reports[0].data.private, undefined);
+  // lock after repeated failures
+  for (let i = 0; i < 5; i++) await call(stuLogin.onRequestPost, req('/api/student/login', 'POST', { username: acc.stu_user, password: 'nope' + i }));
+  const locked = await call(stuLogin.onRequestPost, req('/api/student/login', 'POST', { username: acc.stu_user, password: acc.stu_pass }));
+  assert.equal(locked.res.status, 429);
+  // the admin can set an easier password, which also lifts the lock
+  const set = await call(bookings.onRequestPatch, req('/api/admin/bookings', 'PATCH', { id: row.id, stu_pass: '1234' }, auth));
+  assert.equal(set.res.status, 200);
+  assert.equal((await call(stuLogin.onRequestPost, req('/api/student/login', 'POST', { username: acc.stu_user, password: '1234' }))).res.status, 200);
 });
 
 console.log(`\n${n} checks passed`);

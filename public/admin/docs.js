@@ -136,8 +136,9 @@
   /* ---------- progress report ---------- */
   const SKILLS = [['listening', 'الاستماع'], ['speaking', 'التحدث'], ['reading', 'القراءة'], ['writing', 'الكتابة'], ['vocab', 'المفردات'], ['pronunciation', 'النطق'], ['grammar', 'التراكيب'], ['comprehension', 'الفهم']];
   const BEHAV = [['participation', 'المشاركة'], ['focus', 'التركيز'], ['confidence', 'الثقة بالنفس'], ['effort', 'الاجتهاد']];
+  const shown = (d, grp, k) => Number(d[grp] && d[grp][k]) > 0 && !(d.show && d.show[grp + '.' + k] === false);
   function avg(obj, keys) { const v = keys.map((k) => Number(obj && obj[k]) || 0).filter((x) => x > 0); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0; }
-  function reportScore(d) { const a = avg(d.skills, SKILLS.map((s) => s[0])); return a ? Math.round((a / 5) * 100) : 0; }
+  function reportScore(d) { const a = avg(d.skills, SKILLS.map((s) => s[0]).filter((k) => shown(d, 'skills', k))); return a ? Math.round((a / 5) * 100) : 0; }
   function verdict(p) { return p >= 90 ? 'ممتاز' : p >= 76 ? 'جيد جدًا' : p >= 60 ? 'جيد' : p > 0 ? 'يحتاج إلى دعم' : 'غير مُقيَّم'; }
 
   function gauge(g, cx, cy, r, pct, col) {
@@ -189,33 +190,39 @@
     text(g, 'متوسط مهارات الحصة', XR - 150, doc.y + 88, { size: 12, weight: 600, color: C.muted });
     const facts = [['المستوى الحالي', d.level], ['التقدّم', d.progress], ['الواجب المنزلي', d.homeworkStatus], ['نتيجة الاختبار القصير', d.score !== '' && d.score != null ? d.score + ' / 10' : '']];
     facts.forEach((f, i) => {
-      const col = i % 2, row = Math.floor(i / 2), x = XR - 250 - col * 230, yy = doc.y + 34 + row * 52;
+      const col = i % 2, row = Math.floor(i / 2), x = XR - 300 - col * 215, yy = doc.y + 34 + row * 52;
       text(g, f[0], x, yy, { size: 11, weight: 600, color: C.muted });
       text(g, f[1] || '—', x, yy + 20, { size: 15, weight: 800, color: C.blue });
     });
     doc.y += oh + 8;
 
     // skills
+    const SK = SKILLS.filter((s) => shown(d, 'skills', s[0]));
+    if (SK.length) {
     doc.section('مهارات الحصة (من 5)');
     g = doc.g;
     const colW = (CW - 30) / 2;
-    SKILLS.forEach((s, i) => {
+    SK.forEach((s, i) => {
       const col = i % 2, row = Math.floor(i / 2), xr = XR - col * (colW + 30), yy = doc.y + row * 34, v = Number(d.skills && d.skills[s[0]]) || 0;
       text(g, s[1], xr, yy + 12, { size: 13, weight: 700 });
       if (v) { bar(g, xr - 78, yy + 3, colW - 130, v, 5, scoreColor(v * 20)); text(g, v + '/5', xr - colW + 30, yy + 12, { size: 12, weight: 800, color: C.blue, align: 'left' }); }
       else text(g, 'لم تُقيَّم', xr - 78, yy + 12, { size: 11, weight: 600, color: C.muted });
     });
-    doc.y += Math.ceil(SKILLS.length / 2) * 34 + 6;
+    doc.y += Math.ceil(SK.length / 2) * 34 + 6;
+    }
 
     // behaviour
+    const BH = BEHAV.filter((s) => shown(d, 'behavior', s[0]));
+    if (BH.length) {
     doc.section('السلوك والتفاعل');
     g = doc.g;
-    BEHAV.forEach((s, i) => {
+    BH.forEach((s, i) => {
       const x = XR - i * (CW / 4), v = Number(d.behavior && d.behavior[s[0]]) || 0;
       text(g, s[1], x, doc.y + 12, { size: 12, weight: 700, color: C.muted });
       for (let k = 0; k < 5; k++) { g.beginPath(); g.arc(x - 8 - k * 16, doc.y + 30, 6, 0, 7); g.fillStyle = k < v ? C.yellow : '#e8edf8'; g.fill(); if (k < v) { g.strokeStyle = '#e0b800'; g.lineWidth = 1; g.stroke(); } }
     });
     doc.y += 52;
+    }
 
     // trend
     const pts = (history || []).slice(-6).map((h) => ({ v: h.v, d: h.d })).concat([{ v: pct, d: d.date ? d.date.slice(5) : 'الآن' }]);
@@ -439,7 +446,7 @@
   }
 
   window.YSDocs = {
-    SKILLS, BEHAV, reportScore, verdict, invoiceTotals, money,
+    SKILLS, BEHAV, shown, reportScore, verdict, invoiceTotals, money,
     ready: () => Promise.all(['400', '700', '900'].map((w) => document.fonts.load(w + ' 16px Cairo', 'ياسمينا')).concat([document.fonts.ready])).catch(() => {}),
     report: renderReport, invoice: renderInvoice, toPdf, stamp: stampCanvas,
   };

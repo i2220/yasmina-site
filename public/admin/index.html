@@ -106,6 +106,15 @@ fieldset{border:0;min-width:0}legend{font-weight:700;font-size:15px;margin-botto
   .grid2{grid-template-columns:1fr}
 }
 
+/* profile */
+.profile{display:flex;gap:20px;align-items:center;flex-wrap:wrap;padding:16px 18px;border:1px solid var(--line);border-radius:22px;background:var(--panel)}
+.ph{width:120px;height:120px;border-radius:50%;overflow:hidden;border:2px solid var(--yellow);display:grid;place-items:center;background:#10163a;flex:none}
+.ph img{width:100%;height:100%;object-fit:cover}.ph svg{width:56%;height:56%;fill:none;stroke:var(--muted);stroke-width:1.6}
+.pinfo h2{font-weight:900;font-size:22px;color:var(--yellow);margin-bottom:8px}.pbtns{display:flex;gap:10px;flex-wrap:wrap}
+.acct{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:14px;border:1px dashed rgba(255,229,0,.35);background:rgba(255,229,0,.05)}
+.acct b{font-weight:800}.acct code{direction:ltr;unicode-bidi:embed;font-family:ui-monospace,Menlo,monospace;font-size:16px;font-weight:800;color:var(--yellow);padding:2px 10px;border-radius:8px;background:rgba(255,229,0,.1)}
+.rate .shw{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);cursor:pointer}
+.rate .shw input{width:20px;height:20px;accent-color:#ffe500}
 /* more tabs */
 .tabs{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
 .tab{white-space:nowrap;flex:none;position:relative}
@@ -235,6 +244,7 @@ details.more summary{cursor:pointer;font-weight:700;color:var(--blue);padding-bl
         <div class="field"><label class="t" for="mFollow">متابعة طلب جديد</label><textarea id="mFollow"></textarea></div>
         <div class="field"><label class="t" for="mCancel">إلغاء أو إعادة جدولة</label><textarea id="mCancel"></textarea></div>
         <div class="field"><label class="t" for="mThanks">شكر بعد الحصة</label><textarea id="mThanks"></textarea></div>
+        <div class="field"><label class="t" for="mAccount">بيانات حساب الطالب (متغيرات إضافية: {user} {pass} {link})</label><textarea id="mAccount"></textarea></div>
         <div class="err" id="msgErr" role="alert"></div>
         <div><button class="btn" type="submit">حفظ القوالب</button></div>
       </form>
@@ -242,22 +252,38 @@ details.more summary{cursor:pointer;font-weight:700;color:var(--blue);padding-bl
 
     <section id="pane-teacher" data-pane hidden>
       <form class="form" id="teacherForm">
+        <div class="profile">
+          <div class="ph"><img id="tPhotoImg" alt="صورة المعلمة" hidden><svg id="tPhotoFb" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 5-7 8-7s7 2 8 7"/></svg></div>
+          <div class="pinfo">
+            <h2 id="tHead">ملف المعلمة</h2>
+            <div class="pbtns"><label class="btn sm" for="tPhotoFile">تغيير الصورة</label><input id="tPhotoFile" type="file" accept="image/*" hidden><button class="ghost sm" id="tPhotoDel" type="button">حذف الصورة</button></div>
+            <p class="help">تُقصّ الصورة تلقائيًا لمربع وتُصغَّر، وتظهر في قسم المعلمة بالموقع. اضغط «حفظ» بعد الاختيار.</p>
+          </div>
+        </div>
         <div class="grid2">
           <div class="field"><label class="t" for="tName">اسم المعلمة</label><input id="tName" type="text" maxlength="60"></div>
-          <div class="field"><label class="t" for="tTitle">المسمى</label><input id="tTitle" type="text" maxlength="80"></div>
+          <div class="field"><label class="t" for="tTitle">المسمى الوظيفي</label><input id="tTitle" type="text" maxlength="80"></div>
           <div class="field"><label class="t" for="tYears">سنوات الخبرة</label><input id="tYears" type="text" inputmode="numeric" dir="ltr" style="text-align:right"></div>
+          <div class="field"><label class="t" for="tEdu">المؤهل أو الشهادات</label><input id="tEdu" type="text" maxlength="160" placeholder="مثال: بكالوريوس آداب لغة إنجليزية"></div>
           <div class="field"><label class="t" for="tCity">المدينة</label><input id="tCity" type="text" maxlength="40"></div>
           <div class="field"><label class="t" for="tArea">المنطقة</label><input id="tArea" type="text" maxlength="40"></div>
           <div class="field"><label class="t" for="tMap">موقع الخريطة (نص بحث جوجل)</label><input id="tMap" type="text" maxlength="120"></div>
         </div>
         <div class="field"><label class="t" for="tBio">نبذة عن المعلمة</label><textarea id="tBio" maxlength="700"></textarea></div>
         <fieldset><legend>الإحصائيات المعروضة على الموقع (حتى 8)</legend><div class="list" id="statRows"></div><div style="padding-top:8px"><button class="ghost sm" id="addStat" type="button">إضافة إحصائية</button></div><p class="help">اكتب أرقامًا حقيقية فقط، مثل +10 أو 120 أو 1:1.</p></fieldset>
-        <fieldset><legend>الباقات (تظهر في نموذج الحجز)</legend>
-          <div class="grid2" style="padding-bottom:8px"><div class="field"><label class="t" for="tCur">العملة</label><input id="tCur" type="text" maxlength="8"></div></div>
-          <div class="list" id="planRows"></div><div style="padding-top:8px"><button class="ghost sm" id="addPlan" type="button">إضافة باقة</button></div>
-          <p class="help">الباقة ذات الحصة الواحدة والسعر صفر تُعدّ حصة تجريبية.</p></fieldset>
         <div class="err" id="teacherErr" role="alert"></div>
-        <div><button class="btn" type="submit">حفظ</button></div>
+        <div><button class="btn" type="submit">حفظ الملف</button></div>
+      </form>
+    </section>
+
+    <section id="pane-plans" data-pane hidden>
+      <form class="form" id="plansForm">
+        <p class="hint">الباقات تظهر في نموذج الحجز بالموقع. الباقة ذات الحصة الواحدة والسعر صفر تُعدّ حصة تجريبية.</p>
+        <div class="grid2"><div class="field"><label class="t" for="tCur">العملة</label><input id="tCur" type="text" maxlength="8"></div></div>
+        <div class="list" id="planRows"></div>
+        <div><button class="ghost sm" id="addPlan" type="button">إضافة باقة</button></div>
+        <div class="err" id="plansErr" role="alert"></div>
+        <div><button class="btn" type="submit">حفظ الباقات</button></div>
       </form>
     </section>
 
@@ -289,8 +315,9 @@ details.more summary{cursor:pointer;font-weight:700;color:var(--blue);padding-bl
   const $=id=>document.getElementById(id);
   const STATUS={new:'جديد',confirmed:'مؤكد',done:'تمت',cancelled:'ملغى'};
   const PAYL={unpaid:'غير مدفوع',partial:'مدفوع جزئيًا',paid:'مدفوع'};
-  const TABS=[['overview','نظرة عامة'],['bookings','الحجوزات'],['schedule','الجدول'],['follow','المتابعة'],['students','الطلاب'],['payments','المدفوعات'],['messages','الرسائل'],['reports','التقارير'],['invoices','الفاتورة'],['teacher','المعلمة والباقات'],['settings','الإعدادات']];
+  const TABS=[['overview','نظرة عامة'],['bookings','الحجوزات'],['schedule','الجدول'],['follow','المتابعة'],['students','الطلاب'],['payments','المدفوعات'],['messages','الرسائل'],['reports','التقارير'],['invoices','الفاتورة'],['teacher','المعلمة'],['plans','الباقات'],['settings','الإعدادات']];
   let settings=null,timer=0,all=[],cur='overview',allDays=[];
+  const OPEN=new Set();
 
   function el(tag,cls,text){const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined&&text!==null)e.textContent=text;return e}
   function toast(msg,bad){const t=$('toast');t.textContent=msg;t.className='toast'+(bad?' bad':'');t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>{t.hidden=true},2800)}
@@ -367,10 +394,10 @@ details.more summary{cursor:pointer;font-weight:700;color:var(--blue);padding-bl
   function fill(tpl,b){
     const s=settings||{},w=slot(b);
     return String(tpl||'').replace(/\{parent\}/g,b.parent).replace(/\{child\}/g,b.child).replace(/\{grade\}/g,b.grade)
-      .replace(/\{day\}/g,w.day).replace(/\{time\}/g,w.time).replace(/\{zoom\}/g,b.zoom_link||s.zoomLink||'(أنشئ رابط زووم لهذا الحجز أولًا)');
+      .replace(/\{user\}/g,b.stu_user||'').replace(/\{pass\}/g,b.stu_pass||'').replace(/\{link\}/g,location.origin+'/student/').replace(/\{day\}/g,w.day).replace(/\{time\}/g,w.time).replace(/\{zoom\}/g,b.zoom_link||s.zoomLink||'(أنشئ رابط زووم لهذا الحجز أولًا)');
   }
-  const TPL={confirm:'confirmTemplate',reminder:'reminderTemplate',follow:'followTemplate',cancel:'cancelTemplate',thanks:'thanksTemplate'};
-  const TPLN={confirm:'تأكيد الموعد',reminder:'تذكير بالحصة',follow:'متابعة',cancel:'إلغاء / إعادة جدولة',thanks:'شكر بعد الحصة'};
+  const TPL={confirm:'confirmTemplate',reminder:'reminderTemplate',follow:'followTemplate',cancel:'cancelTemplate',thanks:'thanksTemplate',account:'accountTemplate'};
+  const TPLN={confirm:'تأكيد الموعد',reminder:'تذكير بالحصة',follow:'متابعة',cancel:'إلغاء / إعادة جدولة',thanks:'شكر بعد الحصة',account:'بيانات حساب الطالب'};
   function waLink(b,kind){return 'https://wa.me/'+phoneOf(b)+'?text='+encodeURIComponent(fill((settings||{})[TPL[kind]],b))}
   function waBtn(b,kind,label,cls){const a=el('a',cls||'btn sm',label||TPLN[kind]);a.href=waLink(b,kind);a.target='_blank';a.rel='noopener';return a}
   function isTrial(b){return !!b.trial||/تجريب/.test(b.plan||'')}
@@ -390,7 +417,7 @@ details.more summary{cursor:pointer;font-weight:700;color:var(--blue);padding-bl
       $('sTimes').value=(settings.times||[]).join('\n');
       const box=$('sDays');box.textContent='';
       j.allDays.forEach(d=>{const l=el('label','chip');const i=el('input');i.type='checkbox';i.value=d;i.checked=(settings.days||[]).includes(d);l.append(i,el('span','',d));box.append(l)});
-      $('mConfirm').value=settings.confirmTemplate||'';$('mReminder').value=settings.reminderTemplate||'';$('mFollow').value=settings.followTemplate||'';$('mCancel').value=settings.cancelTemplate||'';$('mThanks').value=settings.thanksTemplate||'';
+      $('mConfirm').value=settings.confirmTemplate||'';$('mReminder').value=settings.reminderTemplate||'';$('mFollow').value=settings.followTemplate||'';$('mCancel').value=settings.cancelTemplate||'';$('mThanks').value=settings.thanksTemplate||'';$('mAccount').value=settings.accountTemplate||'';
       fillTeacher();render();
     }catch(e){toast(e.message,true)}
   }
@@ -498,8 +525,20 @@ details.more summary{cursor:pointer;font-weight:700;color:var(--blue);padding-bl
     }
     const zm=el('button','ghost sm',b.zoom_link?'إنشاء اجتماع جديد':'إنشاء رابط زووم');zm.type='button';
     zm.addEventListener('click',()=>openZoomForm(b,zb,zm));zb.append(zm);c.append(zb);
+    const ab=el('div','acct');
+    if(b.stu_user){
+      ab.append(el('b','','حساب الطالب'),el('span','hint','المستخدم'),el('code','',b.stu_user),el('span','hint','كلمة المرور'),el('code','',b.stu_pass));
+      const cp=el('button','ghost sm','نسخ');cp.type='button';
+      cp.addEventListener('click',async()=>{try{await navigator.clipboard.writeText('الرابط: '+location.origin+'/student/\nاسم المستخدم: '+b.stu_user+'\nكلمة المرور: '+b.stu_pass);toast('تم نسخ بيانات الدخول')}catch(e){toast('تعذّر النسخ',true)}});
+      const ch=el('button','ghost sm','تغيير كلمة المرور');ch.type='button';
+      ch.addEventListener('click',()=>{const v=prompt('كلمة المرور الجديدة (4 إلى 12 حرفًا أو رقمًا إنجليزيًا):',b.stu_pass);if(v&&v!==b.stu_pass)patch(b.id,{stu_pass:v},'تم تغيير كلمة المرور')});
+      ab.append(cp,waBtn(b,'account','واتساب: إرسال بيانات الدخول','btn sm'),ch);
+    }else ab.append(el('span','hint','يُنشأ حساب الطالب تلقائيًا (اسم مستخدم وكلمة مرور سهلة) بمجرد تأكيد الحجز.'));
+    c.append(ab);
     // progress and payment
     const det=el('details','more');det.append(el('summary','','الدفع والتقدّم والمتابعة'));
+    if(OPEN.has(b.id))det.open=true;
+    det.addEventListener('toggle',()=>{det.open?OPEN.add(b.id):OPEN.delete(b.id)});
     const ed=el('div','edit');
     const ps=el('select');Object.entries(PAYL).forEach(([k,l])=>{const o=el('option','',l);o.value=k;if(k===b.pay_status)o.selected=true;ps.append(o)});
     ps.addEventListener('change',()=>patch(b.id,{pay_status:ps.value}));const pl=el('label','','حالة الدفع');pl.append(ps);
@@ -635,7 +674,7 @@ details.more summary{cursor:pointer;font-weight:700;color:var(--blue);padding-bl
   /* ----- messages ----- */
   $('msgForm').addEventListener('submit',async e=>{
     e.preventDefault();
-    await saveSettings({confirmTemplate:$('mConfirm').value,reminderTemplate:$('mReminder').value,followTemplate:$('mFollow').value,cancelTemplate:$('mCancel').value,thanksTemplate:$('mThanks').value},$('msgErr'),'تم حفظ القوالب');
+    await saveSettings({confirmTemplate:$('mConfirm').value,reminderTemplate:$('mReminder').value,followTemplate:$('mFollow').value,cancelTemplate:$('mCancel').value,thanksTemplate:$('mThanks').value,accountTemplate:$('mAccount').value},$('msgErr'),'تم حفظ القوالب');
   });
 
   /* ----- teacher and plans ----- */
@@ -653,19 +692,38 @@ details.more summary{cursor:pointer;font-weight:700;color:var(--blue);padding-bl
     const x=el('button','ghost sm danger','حذف');x.type='button';x.addEventListener('click',()=>r.remove());
     r.style.gridTemplateColumns='1fr 90px 110px auto';r.append(nm,ls,pr,x);return r;
   }
+  let photoData='';
+  function showPhoto(){const i=$('tPhotoImg');i.hidden=!photoData;$('tPhotoFb').style.display=photoData?'none':'';if(photoData)i.src=photoData}
   function fillTeacher(){
     const s=settings;if(!s)return;
-    $('tName').value=s.teacherName||'';$('tTitle').value=s.teacherTitle||'';$('tYears').value=s.teacherYears;$('tCity').value=s.teacherCity||'';$('tArea').value=s.teacherArea||'';$('tMap').value=s.mapQuery||'';$('tBio').value=s.teacherBio||'';$('tCur').value=s.currency||'';
+    $('tName').value=s.teacherName||'';$('tTitle').value=s.teacherTitle||'';$('tYears').value=s.teacherYears;$('tEdu').value=s.teacherEdu||'';$('tCity').value=s.teacherCity||'';$('tArea').value=s.teacherArea||'';$('tMap').value=s.mapQuery||'';$('tBio').value=s.teacherBio||'';$('tCur').value=s.currency||'';
+    photoData=s.teacherPhoto||'';showPhoto();
     const sr=$('statRows');sr.textContent='';(s.teacherStats||[]).forEach(x=>sr.append(statRow(x.n,x.l)));
     const pr=$('planRows');pr.textContent='';(s.plans||[]).forEach(p=>pr.append(planRow(p)));
   }
+  $('tPhotoFile').addEventListener('change',e=>{
+    const f=e.target.files&&e.target.files[0];if(!f)return;
+    const img=new Image(),url=URL.createObjectURL(f);
+    img.onload=()=>{
+      const n=Math.min(img.width,img.height),c=document.createElement('canvas');c.width=c.height=360;
+      const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,360,360);g.drawImage(img,(img.width-n)/2,(img.height-n)/2,n,n,0,0,360,360);
+      photoData=c.toDataURL('image/jpeg',0.84);URL.revokeObjectURL(url);showPhoto();toast('تم اختيار الصورة. اضغط حفظ الملف');
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);toast('تعذّر قراءة الصورة',true)};
+    img.src=url;e.target.value='';
+  });
+  $('tPhotoDel').addEventListener('click',()=>{photoData='';showPhoto();toast('اضغط حفظ الملف لتأكيد الحذف')});
   $('addStat').addEventListener('click',()=>{if($('statRows').children.length<8)$('statRows').append(statRow('',''))});
   $('addPlan').addEventListener('click',()=>{if($('planRows').children.length<8)$('planRows').append(planRow({name:'',lessons:1,price:0}))});
   $('teacherForm').addEventListener('submit',async e=>{
     e.preventDefault();
     const stats=[...$('statRows').children].map(r=>({n:r.children[0].value,l:r.children[1].value}));
+    await saveSettings({teacherName:$('tName').value,teacherTitle:$('tTitle').value,teacherYears:Number($('tYears').value)||0,teacherEdu:$('tEdu').value,teacherCity:$('tCity').value,teacherArea:$('tArea').value,mapQuery:$('tMap').value,teacherBio:$('tBio').value,teacherPhoto:photoData,teacherStats:stats},$('teacherErr'),'تم حفظ ملف المعلمة');
+  });
+  $('plansForm').addEventListener('submit',async e=>{
+    e.preventDefault();
     const plans=[...$('planRows').children].map(r=>({name:r.children[0].value,lessons:Number(r.children[1].value)||0,price:Number(r.children[2].value)||0}));
-    await saveSettings({teacherName:$('tName').value,teacherTitle:$('tTitle').value,teacherYears:Number($('tYears').value)||0,teacherCity:$('tCity').value,teacherArea:$('tArea').value,mapQuery:$('tMap').value,teacherBio:$('tBio').value,currency:$('tCur').value,teacherStats:stats,plans},$('teacherErr'),'تم حفظ بيانات المعلمة والباقات');
+    await saveSettings({currency:$('tCur').value,plans},$('plansErr'),'تم حفظ الباقات');
   });
 
   /* ----- site settings ----- */
