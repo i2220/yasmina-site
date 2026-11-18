@@ -522,9 +522,9 @@ em{font-style:normal;color:var(--muted);font-weight:500;font-size:14px}
           <div class="play-row">
             <button class="play-speak" id="wordSpeak" type="button"><svg viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18V6L7.5 9.5Z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>استمع للكلمة</button>
           </div>
-          <div class="word-blanks" id="wordBlanks"></div>
+          <div class="word-blanks" id="wordBlanks" dir="ltr"></div>
           <div class="match-fb" id="wordFb"></div>
-          <div class="word-letters" id="wordLetters"></div>
+          <div class="word-letters" id="wordLetters" dir="ltr"></div>
           <div class="play-row" id="wordNext" hidden>
             <button class="play-next" id="wordNextBtn" type="button">الكلمة التالية →</button>
           </div>
@@ -1360,43 +1360,55 @@ const go=document.getElementById('go');
     {w:'KEY',e:'🔑'},{w:'FAN',e:'🌀'},{w:'BUS',e:'🚌'},{w:'JET',e:'✈️'}
   ];
 
-  /* ---- Web Speech API ---- */
-  let synth=null,voices=[];
-  function initSynth(){
-    if(!window.speechSynthesis)return;
-    synth=window.speechSynthesis;
-    function loadVoices(){
-      voices=synth.getVoices();
-    }
-    loadVoices();
-    synth.addEventListener('voiceschanged',loadVoices);
+  /* ---- نظام الصوت: Google TTS + Web Speech fallback ---- */
+  let _audio=null;
+  let _synth=window.speechSynthesis||null;
+  let _voices=[];
+  if(_synth){
+    const _lv=()=>{_voices=_synth.getVoices()};
+    _lv();_synth.addEventListener('voiceschanged',_lv);
   }
-  initSynth();
 
-  /* اختيار صوت أنثوي / طفولي */
-  function pickVoice(){
-    if(!voices.length)return null;
-    // نفضل صوتًا إنجليزيًا أنثويًا
-    const pref=['Samantha','Karen','Victoria','Google UK English Female','Google US English',
-                'en-GB','en-AU','en-US'];
-    for(const p of pref){
-      const v=voices.find(v=>v.name.includes(p)||v.lang.startsWith(p));
+  /* صوت أنثوي طفولي من Web Speech - أفضل الأصوات المتاحة */
+  function _wsPick(){
+    if(!_voices.length)return null;
+    // ترتيب الأفضلية: أصوات طفولية/أنثوية إنجليزية
+    const want=[
+      'Google UK English Female',
+      'Microsoft Mia Online','Microsoft Zira','Microsoft Hazel',
+      'Samantha','Karen','Moira','Tessa','Fiona',
+      'Victoria','Allison','Ava','Susan','Nicky',
+    ];
+    for(const n of want){
+      const v=_voices.find(x=>x.name.includes(n));
       if(v)return v;
     }
-    // أي صوت إنجليزي
-    return voices.find(v=>v.lang.startsWith('en'))||voices[0];
+    return _voices.find(v=>v.lang.startsWith('en-GB'))||
+           _voices.find(v=>v.lang.startsWith('en-AU'))||
+           _voices.find(v=>v.lang.startsWith('en'))||null;
   }
 
-  function speak(text,{rate=0.82,pitch=1.15}={}){
-    if(!synth)return;
-    synth.cancel();
+  /* speak(text, {slow}) - slow=true للحروف المفردة */
+  function speak(text,{slow=false}={}){
+    if(_audio){try{_audio.pause();_audio.src=''}catch(e){}}
+    _audio=new Audio();
+    // سرعة 0.5 للحروف، 0.7 للكلمات
+    const spd=slow?0.5:0.7;
+    _audio.src='https://translate.google.com/translate_tts?ie=UTF-8&tl=en-US&client=tw-ob&ttsspeed='+spd+'&q='+encodeURIComponent(text);
+    _audio.volume=1;
+    _audio.play().catch(()=>_wsFallback(text,slow));
+  }
+
+  function _wsFallback(text,slow){
+    if(!_synth)return;
+    _synth.cancel();
     const u=new SpeechSynthesisUtterance(text);
-    u.lang='en-US';
-    u.rate=rate;
-    u.pitch=pitch;
-    const v=pickVoice();
+    u.lang='en-GB';
+    u.rate=slow?0.65:0.82;
+    u.pitch=1.3;
+    const v=_wsPick();
     if(v)u.voice=v;
-    synth.speak(u);
+    _synth.speak(u);
   }
 
   /* ---- تبويبات اللعبة ---- */
@@ -1429,7 +1441,7 @@ const go=document.getElementById('go');
       c.classList.add('lit');
       setTimeout(()=>c.classList.remove('lit'),1000);
       // صوت: "A is for Apple"
-      speak(`${L}... ${L} is for ${w}`,{rate:.75,pitch:1.2});
+      speak(`${L}. ${L} is for ${w}`,{slow:true});
     });
     grid.appendChild(c);
   });
@@ -1470,11 +1482,11 @@ const go=document.getElementById('go');
           btn.classList.add('ok');
           mScore++;
           $('matchFb').textContent='ممتاز! 🌟';
-          speak(`Yes! ${q.L} is for ${q.w}`,{rate:.8,pitch:1.25});
+          speak(`Yes! ${q.L} is for ${q.w}`);
         }else{
           btn.classList.add('no');
           $('matchFb').textContent=`الصحيح هو ${q.e} ${q.w}`;
-          speak(`No... ${q.L} is for ${q.w}`,{rate:.8,pitch:1.1});
+          speak(`No. ${q.L} is for ${q.w}`);
           // إظهار الصحيح
           choicesEl.querySelectorAll('.match-btn').forEach(b=>{
             if(b.getAttribute('aria-label')===q.w)b.classList.add('ok');
@@ -1487,7 +1499,7 @@ const go=document.getElementById('go');
     });
     $('matchProg').textContent=`سؤال ${mIdx+1} من ${mQ.length}`;
     // تشغيل الصوت تلقائيًا بعد لحظة
-    setTimeout(()=>speak(q.L,{rate:.6,pitch:1.2}),350);
+    setTimeout(()=>speak(q.L,{slow:true}),350);
   }
 
   function updateMatchScore(){
@@ -1497,7 +1509,7 @@ const go=document.getElementById('go');
   }
 
   $('matchSpeak').addEventListener('click',()=>{
-    if(mQ.length)speak(mQ[mIdx].L,{rate:.6,pitch:1.2});
+    if(mQ.length)speak(mQ[mIdx].L,{slow:true});
   });
 
   $('matchNextBtn').addEventListener('click',()=>{
@@ -1508,7 +1520,7 @@ const go=document.getElementById('go');
       $('matchChoices').innerHTML='';
       $('matchNext').hidden=true;
       $('matchFb').textContent=`أحسنت! حصلت على ${mScore} من ${mQ.length} ⭐`;
-      speak(`Great job! You got ${mScore} out of ${mQ.length}`,{rate:.82,pitch:1.2});
+      speak(`Great job! You got ${mScore} out of ${mQ.length}`);
       $('matchHint').textContent='انتهت الجولة! اضغط "العب مجددًا" لتبدأ من جديد.';
       $('matchProg').textContent='';
       const btn=document.createElement('button');
@@ -1594,7 +1606,7 @@ const go=document.getElementById('go');
     lettersEl.appendChild(clr);
 
     // صوت تلقائي بعد لحظة
-    setTimeout(()=>speak(q.w,{rate:.7,pitch:1.2}),350);
+    setTimeout(()=>speak(q.w,{slow:true}),350);
   }
 
   function checkWord(q){
@@ -1605,11 +1617,11 @@ const go=document.getElementById('go');
       wScore++;
       blanks.forEach(b=>b.style.borderColor='#86d9b0');
       $('wordFb').textContent='رائع! 🌟';
-      speak(`Great! The word is ${q.w}`,{rate:.8,pitch:1.25});
+      speak(`Great! The word is ${q.w}`);
     }else{
       blanks.forEach(b=>b.classList.add('wrong'));
       $('wordFb').textContent=`الكلمة الصحيحة: ${q.w} ${q.e}`;
-      speak(`The word is ${q.w}`,{rate:.8,pitch:1.1});
+      speak(`The word is ${q.w}`);
     }
     updateWordStars();
     $('wordNext').hidden=false;
@@ -1622,7 +1634,7 @@ const go=document.getElementById('go');
   }
 
   $('wordSpeak').addEventListener('click',()=>{
-    if(wQ.length)speak(wQ[wIdx].w,{rate:.7,pitch:1.2});
+    if(wQ.length)speak(wQ[wIdx].w,{slow:true});
   });
 
   $('wordNextBtn').addEventListener('click',()=>{
@@ -1633,7 +1645,7 @@ const go=document.getElementById('go');
       $('wordLetters').innerHTML='';
       $('wordNext').hidden=true;
       $('wordFb').textContent=`أحسنت! كلمات صحيحة ${wScore} من ${wQ.length} 🌟`;
-      speak(`Excellent! You got ${wScore} words right`,{rate:.82,pitch:1.2});
+      speak(`Excellent! You got ${wScore} words right`);
       const btn=document.createElement('button');
       btn.className='play-next';btn.type='button';btn.textContent='العب مجددًا 🔄';
       btn.addEventListener('click',initWord);
