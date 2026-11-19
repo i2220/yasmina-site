@@ -270,6 +270,28 @@ em{font-style:normal;color:var(--muted);font-weight:500;font-size:14px}
 .play-speak:hover{background:rgba(255,229,0,.12)}
 .play-speak svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 
+/* لعبة فقّع البالون */
+.bal-wrap{display:grid;gap:16px}
+.bal-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:14px 18px;border-radius:20px;border:1px solid var(--line);background:var(--panel)}
+.bal-target-box{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bal-label{font-weight:700;color:var(--muted);font-size:15px}
+.bal-target{font-weight:900;font-size:clamp(22px,4vw,32px);color:var(--cream);direction:ltr}
+.bal-score-box{display:flex;align-items:center;gap:10px}
+.bal-pts{font-weight:800;font-size:18px;color:var(--gold)}
+.bal-stage{position:relative;width:100%;height:clamp(300px,50vw,480px);border-radius:24px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(3,18,60,.0) 0%,rgba(3,18,60,.5) 100%);overflow:hidden;cursor:default}
+.bal-fb{text-align:center;font-size:clamp(20px,3.5vw,28px);font-weight:800;min-height:1.6em;transition:opacity .3s}
+/* البالون */
+.bal{position:absolute;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;user-select:none;-webkit-user-select:none;transition:transform .12s;will-change:transform,top}
+.bal:hover{transform:scale(1.1)}
+.bal-body{display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:clamp(28px,5vw,44px);line-height:1;animation:balFloat 3s ease-in-out infinite}
+.bal-string{width:1px;height:clamp(20px,3vw,32px);background:rgba(255,255,255,.4)}
+.bal-word{font-size:clamp(10px,1.6vw,13px);font-weight:700;color:#fff;background:rgba(0,0,0,.35);padding:2px 6px;border-radius:6px;direction:ltr;white-space:nowrap}
+@keyframes balFloat{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.bal.pop{animation:balPop .4s ease forwards;pointer-events:none}
+@keyframes balPop{0%{transform:scale(1);opacity:1}50%{transform:scale(1.6);opacity:.7}100%{transform:scale(0);opacity:0}}
+.bal.wrong{animation:balWrong .3s ease}
+@keyframes balWrong{0%,100%{transform:scale(1)}50%{transform:scale(.85) rotate(-8deg)}}
+
 @media (max-width:820px){
   .abc-grid{grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:8px}
   .abc-big{font-size:28px}.abc-small{font-size:16px}
@@ -435,7 +457,7 @@ em{font-style:normal;color:var(--muted);font-weight:500;font-size:14px}
             </fieldset>
             <fieldset><legend>الباقة المناسبة</legend><div class="chips" id="plansBox"></div><p class="note" id="planNote"></p></fieldset>
             <fieldset><legend>الأيام المناسبة</legend><div class="chips" id="daysBox"></div></fieldset>
-            <fieldset><legend>الوقت المناسب <em>(بتوقيت الكويت)</em></legend><div class="chips" id="timesBox"></div></fieldset>
+            <fieldset><legend>الوقت المناسب <em>(بتوقيت مصر)</em></legend><div class="chips" id="timesBox"></div></fieldset>
             <div class="row">
               <div class="field"><label class="t" for="startDate">أقرب تاريخ للبدء <em>(اختياري)</em></label><input id="startDate" type="date"></div>
               <div class="field"><label class="t" for="siblings">عدد الأطفال المسجَّلين</label><select id="siblings"><option value="1">طفل واحد</option><option value="2">طفلان</option><option value="3">ثلاثة أطفال</option><option value="4">أربعة أطفال</option></select></div>
@@ -483,6 +505,7 @@ em{font-style:normal;color:var(--muted);font-weight:500;font-size:14px}
         <button class="play-tab on" role="tab" aria-selected="true"  data-pt="abc">🔤 تعلم الحروف</button>
         <button class="play-tab"    role="tab" aria-selected="false" data-pt="match">🎵 طابق الصوت</button>
         <button class="play-tab"    role="tab" aria-selected="false" data-pt="word">🧩 اكتشف الكلمة</button>
+        <button class="play-tab"    role="tab" aria-selected="false" data-pt="balloon">🎈 فقّع البالون</button>
       </div>
 
       <!-- تعلم الحروف -->
@@ -507,6 +530,27 @@ em{font-style:normal;color:var(--muted);font-weight:500;font-size:14px}
           <div class="match-fb" id="matchFb"></div>
           <div class="play-row" id="matchNext" hidden>
             <button class="play-next" id="matchNextBtn" type="button">التالي →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- فقّع البالون -->
+      <div id="pt-balloon" hidden role="tabpanel">
+        <div class="bal-wrap">
+          <div class="bal-header">
+            <div class="bal-target-box">
+              <span class="bal-label">انقر على:</span>
+              <span class="bal-target" id="balTarget">🍎 Apple</span>
+            </div>
+            <div class="bal-score-box">
+              <span class="score-stars" id="balStars">⭐⭐⭐⭐⭐</span>
+              <span class="bal-pts" id="balPts">0 نقطة</span>
+            </div>
+          </div>
+          <div class="bal-stage" id="balStage" aria-label="ساحة اللعب"></div>
+          <div class="bal-fb" id="balFb"></div>
+          <div class="play-row" id="balDone" hidden>
+            <button class="play-next" id="balRestart" type="button">العب مجددًا 🔄</button>
           </div>
         </div>
       </div>
@@ -1291,7 +1335,7 @@ const go=document.getElementById('go');
       .concat(payload.goals.length?['الأهداف: '+payload.goals.join('، ')]:[])
       .concat(['ولي الأمر: '+payload.parent,'واتساب: '+payload.phone,'الدولة: '+payload.tz,'نوع الحصة: '+payload.kind])
       .concat(plan?['الباقة: '+plan]:[])
-      .concat(['الأيام المناسبة: '+payload.days.join('، '),'الأوقات المناسبة (بتوقيت الكويت): '+payload.times.join('، ')])
+      .concat(['الأيام المناسبة: '+payload.days.join('، '),'الأوقات المناسبة (بتوقيت مصر): '+payload.times.join('، ')])
       .concat(payload.start_date?['أقرب تاريخ للبدء: '+payload.start_date]:[])
       .concat(+payload.siblings>1?['عدد الأطفال: '+payload.siblings]:[])
       .concat(payload.notes?['ملاحظات: '+payload.notes]:[]).join('\n');
@@ -1360,60 +1404,74 @@ const go=document.getElementById('go');
     {w:'KEY',e:'🔑'},{w:'FAN',e:'🌀'},{w:'BUS',e:'🚌'},{w:'JET',e:'✈️'}
   ];
 
-  /* ---- نظام الصوت: Google TTS + Web Speech fallback ---- */
-  let _audio=null;
-  let _synth=window.speechSynthesis||null;
+  /* ---- نظام الصوت: Web Speech API (يعمل على الموبايل والكمبيوتر) ---- */
+  const _synth=window.speechSynthesis||null;
   let _voices=[];
+  let _voicesReady=false;
+
+  function _loadVoices(){
+    if(!_synth)return;
+    _voices=_synth.getVoices();
+    if(_voices.length)_voicesReady=true;
+  }
   if(_synth){
-    const _lv=()=>{_voices=_synth.getVoices()};
-    _lv();_synth.addEventListener('voiceschanged',_lv);
+    _loadVoices();
+    _synth.addEventListener('voiceschanged',()=>{_loadVoices()});
+    // iOS يحتاج وقتًا لتحميل الأصوات
+    setTimeout(_loadVoices,500);
+    setTimeout(_loadVoices,1500);
   }
 
-  /* صوت أنثوي طفولي من Web Speech - أفضل الأصوات المتاحة */
-  function _wsPick(){
-    if(!_voices.length)return null;
-    // ترتيب الأفضلية: أصوات طفولية/أنثوية إنجليزية
-    const want=[
-      'Google UK English Female',
-      'Microsoft Mia Online','Microsoft Zira','Microsoft Hazel',
-      'Samantha','Karen','Moira','Tessa','Fiona',
-      'Victoria','Allison','Ava','Susan','Nicky',
+  /* اختيار أفضل صوت أنثوي إنجليزي متاح */
+  function _pickVoice(){
+    if(!_voices.length)_voices=_synth?_synth.getVoices():[];
+    // أولوية: أصوات أنثوية مشهورة عبر المنصات
+    const prefer=[
+      'Google UK English Female',   // Android / Chrome
+      'com.apple.voice.compact.en-GB.Martha', // iOS
+      'com.apple.ttsbundle.Moira-compact',    // iOS
+      'com.apple.ttsbundle.Karen-compact',    // iOS
+      'Microsoft Hazel Online',     // Windows Edge
+      'Microsoft Zira Online','Microsoft Zira Desktop',
+      'Microsoft Mia Online',
+      'Samantha','Karen','Moira','Tessa','Martha',
+      'Fiona','Victoria','Allison','Ava','Nicky','Susan',
+      'Google US English',
     ];
-    for(const n of want){
-      const v=_voices.find(x=>x.name.includes(n));
+    for(const p of prefer){
+      const v=_voices.find(x=>x.name===p||x.name.includes(p));
       if(v)return v;
     }
-    return _voices.find(v=>v.lang.startsWith('en-GB'))||
+    // أي صوت أنثوي إنجليزي بريطاني أو أسترالي
+    const enVoices=_voices.filter(v=>v.lang.startsWith('en'));
+    return enVoices.find(v=>/female|woman|girl/i.test(v.name))||
+           _voices.find(v=>v.lang.startsWith('en-GB'))||
            _voices.find(v=>v.lang.startsWith('en-AU'))||
-           _voices.find(v=>v.lang.startsWith('en'))||null;
+           enVoices[0]||_voices[0]||null;
   }
 
-  /* speak(text, {slow}) - slow=true للحروف المفردة */
+  /* speak(text, {slow}) — slow=true للحروف المفردة */
   function speak(text,{slow=false}={}){
-    if(_audio){try{_audio.pause();_audio.src=''}catch(e){}}
-    _audio=new Audio();
-    // سرعة 0.5 للحروف، 0.7 للكلمات
-    const spd=slow?0.5:0.7;
-    _audio.src='https://translate.google.com/translate_tts?ie=UTF-8&tl=en-US&client=tw-ob&ttsspeed='+spd+'&q='+encodeURIComponent(text);
-    _audio.volume=1;
-    _audio.play().catch(()=>_wsFallback(text,slow));
-  }
-
-  function _wsFallback(text,slow){
     if(!_synth)return;
     _synth.cancel();
-    const u=new SpeechSynthesisUtterance(text);
-    u.lang='en-GB';
-    u.rate=slow?0.65:0.82;
-    u.pitch=1.3;
-    const v=_wsPick();
-    if(v)u.voice=v;
-    _synth.speak(u);
+    const go=()=>{
+      const u=new SpeechSynthesisUtterance(text);
+      u.lang='en-GB';
+      u.rate=slow?0.6:0.78;
+      u.pitch=1.25;
+      u.volume=1;
+      const v=_pickVoice();
+      if(v)u.voice=v;
+      _synth.speak(u);
+    };
+    // iOS: يجب أن تكون الأصوات جاهزة
+    if(_voices.length){go();}
+    else{setTimeout(()=>{_loadVoices();go();},200);}
   }
 
   /* ---- تبويبات اللعبة ---- */
   const ptTabs=document.querySelectorAll('.play-tab');
-  const ptPanels={abc:$('pt-abc'),match:$('pt-match'),word:$('pt-word')};
+  const ptPanels={abc:$('pt-abc'),match:$('pt-match'),word:$('pt-word'),balloon:$('pt-balloon')};
   ptTabs.forEach(btn=>{
     btn.addEventListener('click',()=>{
       ptTabs.forEach(b=>{b.classList.remove('on');b.setAttribute('aria-selected','false')});
@@ -1422,6 +1480,8 @@ const go=document.getElementById('go');
       Object.entries(ptPanels).forEach(([k,p])=>{p.hidden=k!==key});
       if(key==='match')initMatch();
       else if(key==='word')initWord();
+      else if(key==='balloon')initBalloon();
+      else if(key!=='balloon')stopBalloon();
     });
   });
 
@@ -1654,6 +1714,131 @@ const go=document.getElementById('go');
       renderWordQ();
     }
   });
+
+  /* ===== وضع 4: فقّع البالون ===== */
+  const BAL_ITEMS=[
+    {w:'Apple',e:'🍎'},{w:'Ball',e:'⚽'},{w:'Cat',e:'🐱'},{w:'Dog',e:'🐶'},
+    {w:'Egg',e:'🥚'},{w:'Fish',e:'🐟'},{w:'Hat',e:'🎩'},{w:'Kite',e:'🪁'},
+    {w:'Lion',e:'🦁'},{w:'Moon',e:'🌙'},{w:'Sun',e:'☀️'},{w:'Tree',e:'🌳'},
+    {w:'Car',e:'🚗'},{w:'Bee',e:'🐝'},{w:'Cake',e:'🎂'},{w:'Star',e:'⭐'},
+    {w:'Frog',e:'🐸'},{w:'Bird',e:'🐦'},{w:'Boat',e:'⛵'},{w:'Book',e:'📚'},
+  ];
+  const BAL_COLORS=['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff922b','#cc5de8','#f06595','#20c997'];
+
+  let _balTimer=null,_balItems=[],_balIdx=0,_balScore=0,_balActive=[];
+  let _balSpawnTimer=null,_balRunning=false;
+
+  function stopBalloon(){
+    _balRunning=false;
+    clearInterval(_balSpawnTimer);
+    _balActive.forEach(b=>{if(b._raf)cancelAnimationFrame(b._raf)});
+    _balActive=[];
+  }
+
+  function initBalloon(){
+    stopBalloon();
+    _balItems=shuffle([...BAL_ITEMS]);
+    _balIdx=0;_balScore=0;_balActive=[];_balRunning=true;
+    $('balDone').hidden=true;
+    $('balFb').textContent='';
+    $('balPts').textContent='0 نقطة';
+    $('balStars').textContent='⭐⭐⭐⭐⭐';
+    $('balStage').innerHTML='';
+    nextBalloonRound();
+  }
+
+  function nextBalloonRound(){
+    if(_balIdx>=_balItems.length){endBalloon();return;}
+    const target=_balItems[_balIdx];
+    $('balTarget').textContent=`${target.e} ${target.w}`;
+    speak(target.w);
+    // اختر 4-5 بالونات: الصحيح + 3-4 خاطئة
+    const others=shuffle(BAL_ITEMS.filter(x=>x.w!==target.w)).slice(0,4);
+    const pool=shuffle([target,...others]);
+    $('balStage').innerHTML='';
+    _balActive=[];
+    const stage=$('balStage');
+    const W=stage.offsetWidth||320;
+    const H=stage.offsetHeight||360;
+
+    pool.forEach((item,i)=>{
+      const el=document.createElement('div');
+      el.className='bal';
+      const color=BAL_COLORS[i%BAL_COLORS.length];
+      const size=Math.round(60+Math.random()*20);
+      el.innerHTML=`<div class="bal-body" style="width:${size}px;height:${size}px;background:radial-gradient(circle at 35% 30%,${color}dd,${color}88);box-shadow:0 6px 20px -6px ${color}99">${item.e}</div>
+        <div class="bal-string"></div>
+        <div class="bal-word">${item.w}</div>`;
+      // موضع أفقي عشوائي، يبدأ من الأسفل
+      const startX=Math.random()*(W-80)+20;
+      el.style.cssText=`left:${startX}px;bottom:-120px;`;
+      stage.appendChild(el);
+
+      // حركة صعود
+      let posY=-(H+120);
+      const speed=0.4+Math.random()*0.4; // px per ms
+      let last=null;
+      const moveUp=(ts)=>{
+        if(!_balRunning)return;
+        if(!last)last=ts;
+        const dt=ts-last;last=ts;
+        posY+=speed*dt;
+        const bottom=-(H+120)+posY;
+        el.style.bottom=bottom+'px';
+        if(bottom>H+120){
+          // خرج من الشاشة بدون ضغط
+          el.remove();
+          _balActive=_balActive.filter(x=>x!==obj);
+          if(_balActive.every(x=>!x._raf||x._done)){
+            setTimeout(()=>{if(_balRunning)nextBalloonRound();},400);
+          }
+          obj._done=true;return;
+        }
+        obj._raf=requestAnimationFrame(moveUp);
+      };
+      const obj={el,item,_raf:null,_done:false};
+      obj._raf=requestAnimationFrame(moveUp);
+      _balActive.push(obj);
+
+      // ضغط
+      el.addEventListener('click',()=>{
+        if(obj._done)return;
+        if(item.w===target.w){
+          // صحيح!
+          obj._done=true;
+          cancelAnimationFrame(obj._raf);
+          el.classList.add('pop');
+          _balScore++;
+          $('balFb').textContent='ممتاز! 🎉';
+          $('balPts').textContent=_balScore+' نقطة';
+          speak(`Yes! ${target.w}`);
+          // أوقف الباقين
+          _balActive.forEach(o=>{if(!o._done){o._done=true;cancelAnimationFrame(o._raf)}});
+          setTimeout(()=>{
+            if(_balRunning){_balIdx++;nextBalloonRound();}
+          },900);
+        }else{
+          // خطأ
+          el.classList.add('wrong');
+          setTimeout(()=>el.classList.remove('wrong'),350);
+          $('balFb').textContent='حاول مرة أخرى! 🔊';
+          speak(target.w);
+        }
+      });
+    });
+  }
+
+  function endBalloon(){
+    _balRunning=false;
+    $('balStage').innerHTML='';
+    $('balFb').textContent=`أحسنت! نقاطك ${_balScore} من ${_balItems.length} 🌟`;
+    speak(`Excellent! You got ${_balScore} points`);
+    const stars=Math.round(_balScore/_balItems.length*5);
+    $('balStars').textContent='⭐'.repeat(stars)+'☆'.repeat(5-stars);
+    $('balDone').hidden=false;
+  }
+
+  $('balRestart').addEventListener('click',initBalloon);
 
 })();
 </script>
