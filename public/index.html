@@ -1047,148 +1047,137 @@ const go=document.getElementById('go');
 ['pointerenter','focus'].forEach(ev=>go.addEventListener(ev,()=>valley.startHoverTransition()));
 ['pointerleave','blur'].forEach(ev=>go.addEventListener(ev,()=>valley.stopHoverTransition()));
 
-/* ===== nature sound (no music) + a small girl's voice saying the English letters and "ياسمين"; starts only on tap ===== */
+/* ===== ambient nature sound — day: gentle breeze + stream + birds / night: crickets + deep calm ===== */
 (function(){
   const btn=document.getElementById('sound');
-  let ac=null,master=null,lp=null,cricketG=null,on=false,birdT=0,speechT=0,idx=0,muffleT=0;
-  btn.setAttribute('aria-label','صوت الطبيعة وصوت طفلة تنطق الحروف');
-  const NAMES=['ay','bee','see','dee','ee','eff','jee','aitch','eye','jay','kay','el','em','en','oh','pee','cue','are','ess','tee','you','vee','double you','ex','why','zee'];
-  const SEQ=[];
-  NAMES.forEach((n,i)=>{SEQ.push({t:n,ar:false});if((i+1)%7===0)SEQ.push({t:'ياسمين',ar:true})});
-  SEQ.push({t:'ياسمين',ar:true});
+  let ac=null,master=null,dayG=null,nightG=null,birdT=0,on=false,modeT=0;
+  btn.setAttribute('aria-label','أصوات الطبيعة');
   const rnd=(a,b)=>a+Math.random()*(b-a);
+
   function noiseBuf(sec,pink){
     const n=ac.sampleRate*sec,b=ac.createBuffer(1,n,ac.sampleRate),d=b.getChannelData(0);
     let b0=0,b1=0,b2=0;
-    for(let i=0;i<n;i++){const w=Math.random()*2-1;if(pink){b0=.99765*b0+w*.099;b1=.963*b1+w*.2965;b2=.57*b2+w*1.0526;d[i]=(b0+b1+b2+w*.1848)*.22}else d[i]=w}
+    for(let i=0;i<n;i++){const w=Math.random()*2-1;if(pink){b0=.99765*b0+w*.099;b1=.963*b1+w*.2965;b2=.57*b2+w*1.0526;d[i]=(b0+b1+b2+w*.1848)*.18}else d[i]=w*.7}
     return b;
   }
   function loopNoise(sec,pink){const s=ac.createBufferSource();s.buffer=noiseBuf(sec,pink);s.loop=true;s.start();return s}
-  function lfo(freq,depth,target){const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=freq;g.gain.value=depth;o.connect(g);g.connect(target);o.start();return o}
-  function build(){
-    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;
-    ac=new AC();master=ac.createGain();master.gain.value=0;lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=9000;
-    master.connect(lp);lp.connect(ac.destination);
-    // wind: slow-moving band-passed noise (reduced volume)
-    const wf=ac.createBiquadFilter();wf.type='bandpass';wf.frequency.value=420;wf.Q.value=.6;
-    const wg=ac.createGain();wg.gain.value=.07;
-    loopNoise(4,true).connect(wf);wf.connect(wg);wg.connect(master);
-    lfo(.07,.04,wg.gain);lfo(.05,160,wf.frequency);
-    // leaves: softer shimmer (reduced)
-    const hf=ac.createBiquadFilter();hf.type='highpass';hf.frequency.value=1500;
-    const lf=ac.createBiquadFilter();lf.type='lowpass';lf.frequency.value=5200;
-    const sg=ac.createGain();sg.gain.value=.016;
-    loopNoise(3,false).connect(hf);hf.connect(lf);lf.connect(sg);sg.connect(master);
-    lfo(.31,.008,sg.gain);lfo(.9,.004,sg.gain);
-    // crickets for the night: a high tone switched on and off very fast
-    const co=ac.createOscillator(),cg=ac.createGain();co.frequency.value=4300;cg.gain.value=0;
-    co.connect(cg);lfo(31,.012,cg.gain);co.start();
-    cricketG=ac.createGain();cricketG.gain.value=0;cg.connect(cricketG);cricketG.connect(master);
-    lfo(2.6,.5,cricketG.gain);
-    muffleT=setInterval(()=>{
-      const D=window.__yasminaMuffle?window.__yasminaMuffle():0;
-      lp.frequency.setTargetAtTime(9000-D*7000,ac.currentTime,.25);
-      cricketG.gain.setTargetAtTime(valley.isNight()>.5?.5:0,ac.currentTime,.6);
-    },200);
-    return true;
+  function lfo(freq,depth,target,offset){const o=ac.createOscillator(),g=ac.createGain();o.frequency.value=freq;g.gain.value=depth;o.connect(g);g.connect(target.gain||target);if(offset)target.value=offset;o.start();return o}
+  function gain(v){const g=ac.createGain();g.gain.value=v;return g}
+  function bpf(f,q){const b=ac.createBiquadFilter();b.type='bandpass';b.frequency.value=f;b.Q.value=q;return b}
+  function lpf(f){const b=ac.createBiquadFilter();b.type='lowpass';b.frequency.value=f;return b}
+  function hpf(f){const b=ac.createBiquadFilter();b.type='highpass';b.frequency.value=f;return b}
+
+  function buildDay(){
+    const g=ac.createGain();g.gain.value=0;g.connect(master);
+    // نسيم لطيف: ضوضاء وردية منخفضة ومرشّحة بـ bandpass حول 300 هرتز
+    const br=bpf(300,.5),brg=gain(.055);
+    loopNoise(5,true).connect(br);br.connect(brg);brg.connect(g);
+    // تذبذب النسيم بشكل بطيء جداً
+    const brlfo=ac.createOscillator(),brlg=ac.createGain();
+    brlfo.frequency.value=.08;brlg.gain.value=.03;brlfo.connect(brlg);brlg.connect(brg.gain);brlfo.start();
+    // جدول ماء هادئ: ضوضاء بيضاء مرشّحة بـ highpass+lowpass
+    const sh=hpf(900),sl=lpf(4000),sg=gain(.018);
+    loopNoise(3,false).connect(sh);sh.connect(sl);sl.connect(sg);sg.connect(g);
+    // تموج الماء
+    const wlfo=ac.createOscillator(),wlg=ac.createGain();
+    wlfo.frequency.value=.22;wlg.gain.value=.009;wlfo.connect(wlg);wlg.connect(sg.gain);wlfo.start();
+    return g;
   }
-  /* many kinds of day birds: each species is a small recipe of glides, trills and pauses */
-  function voice(t,f,d,o){
-    o=o||{};
-    const os=ac.createOscillator(),g=ac.createGain();
-    os.type=o.type||'sine';os.frequency.setValueAtTime(f,t);
-    os.frequency.exponentialRampToValueAtTime(Math.max(80,f*(o.to||1)),t+d);
-    if(o.vib){const l=ac.createOscillator(),lg=ac.createGain();l.frequency.value=o.vib;lg.gain.value=f*.025;l.connect(lg);lg.connect(os.frequency);l.start(t);l.stop(t+d+.05)}
-    const pk=o.vol||.05;
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(pk,t+Math.min(.02,d/3));g.gain.exponentialRampToValueAtTime(.0008,t+d);
+
+  function buildNight(){
+    const g=ac.createGain();g.gain.value=0;g.connect(master);
+    // هواء ليلي: أهدأ وأعمق من النهار
+    const br=bpf(220,.4),brg=gain(.04);
+    loopNoise(6,true).connect(br);br.connect(brg);brg.connect(g);
+    const brlfo=ac.createOscillator(),brlg=ac.createGain();
+    brlfo.frequency.value=.04;brlg.gain.value=.018;brlfo.connect(brlg);brlg.connect(brg.gain);brlfo.start();
+    // جراد الليل: نغمتان متذبذبتان (5100 + 5400 هرتز) تُضاء وتُطفأ ببطء
+    function cricket(freq,rate,vol){
+      const o=ac.createOscillator(),og=gain(0);
+      o.frequency.value=freq;o.type='sine';o.connect(og);og.connect(g);o.start();
+      const lf=ac.createOscillator(),lg=ac.createGain();
+      lf.frequency.value=rate;lg.gain.value=vol;lf.connect(lg);lg.connect(og.gain);lf.start();
+    }
+    cricket(5100,28,.035);cricket(5420,31,.028);cricket(4800,19,.022);
+    // صمت عميق - بين الحين والآخر صوت بومة أو حشرة واحدة
+    return g;
+  }
+
+  /* طيور النهار: أنواع متعددة */
+  function chirp(t,f,d,opts){
+    opts=opts||{};
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.type=opts.type||'sine';o.frequency.setValueAtTime(f,t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(80,f*(opts.to||1)),t+d);
+    if(opts.vib){const lv=ac.createOscillator(),lg=ac.createGain();lv.frequency.value=opts.vib;lg.gain.value=f*.02;lv.connect(lg);lg.connect(o.frequency);lv.start(t);lv.stop(t+d+.05)}
+    const pk=opts.vol||.045;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(pk,t+Math.min(.02,d*.3));
+    g.gain.exponentialRampToValueAtTime(.0006,t+d);
     let out=g;
-    if(ac.createStereoPanner&&o.pan!=null){const pn=ac.createStereoPanner();pn.pan.value=o.pan;g.connect(pn);out=pn}
-    os.connect(g);out.connect(master);os.start(t);os.stop(t+d+.03);
+    if(ac.createStereoPanner&&opts.pan!=null){const pn=ac.createStereoPanner();pn.pan.value=opts.pan;g.connect(pn);out=pn}
+    o.connect(g);out.connect(master);o.start(t);o.stop(t+d+.04);
   }
-  const SPECIES=[
-    // sparrow: short dry chirps
-    (t,pan)=>{const n=3+Math.floor(Math.random()*4);for(let i=0;i<n;i++){voice(t,rnd(3200,4600),.05,{to:rnd(.75,1.3),vol:.045,type:'triangle',pan});t+=rnd(.09,.2)}},
-    // warbler: fast bright trill
-    (t,pan)=>{const f=rnd(3400,5200),n=10+Math.floor(Math.random()*10);for(let i=0;i<n;i++){voice(t,f*(i%2?1.12:.94),.035,{to:1.08,vol:.035,pan});t+=.05}},
-    // dove: low soft coo, three beats
-    (t,pan)=>{const f=rnd(430,560);voice(t,f,.34,{to:.9,vol:.06,vib:5,pan});voice(t+.4,f*1.04,.22,{to:.88,vol:.055,vib:5,pan});voice(t+.7,f*1.04,.22,{to:.88,vol:.05,vib:5,pan});voice(t+1.05,f*1.06,.45,{to:.82,vol:.055,vib:5,pan})},
-    // oriole-like whistle: liquid up-and-down glides
-    (t,pan)=>{const f=rnd(1500,2200),n=3+Math.floor(Math.random()*3);for(let i=0;i<n;i++){voice(t,f*rnd(.9,1.2),.2,{to:i%2?.6:1.7,vol:.05,vib:9,pan});t+=rnd(.24,.34)}},
-    // cuckoo: two falling notes
-    (t,pan)=>{const f=rnd(640,760);voice(t,f*1.12,.22,{to:.97,vol:.065,pan});voice(t+.34,f*.9,.3,{to:.97,vol:.065,pan})},
-    // songbird: a short melody, rising and falling
-    (t,pan)=>{const base=rnd(2000,3000),n=5+Math.floor(Math.random()*4);let f=base;for(let i=0;i<n;i++){f=Math.max(1500,Math.min(5200,f*rnd(.8,1.3)));voice(t,f,rnd(.08,.16),{to:rnd(.8,1.3),vol:.045,vib:rnd(0,18),pan});t+=rnd(.1,.19)}},
-    // tit: two-note "tee-chu" repeated
-    (t,pan)=>{const f=rnd(3500,4400);for(let i=0;i<3;i++){voice(t,f,.09,{to:.88,vol:.045,pan});voice(t+.13,f*.72,.1,{to:.9,vol:.04,pan});t+=.42}},
-    // thrush: slow flutey phrase with a pause
-    (t,pan)=>{const f=rnd(1800,2600);[1,1.25,.95,1.4,1.1].forEach((r,i)=>{voice(t+i*.22,f*r,.17,{to:rnd(.9,1.15),vol:.05,vib:7,pan})})},
+  const BIRDS=[
+    // يمامة حنونة: ثلاث نغمات منخفضة ودافئة
+    (t,p)=>{const f=rnd(440,540);[0,.42,.78,1.1].forEach((dt,i)=>chirp(t+dt,f*(i===3?.98:1.03),.32+i*.04,{to:.91,vol:.058,vib:5,pan:p}))},
+    // بلبل مرح: لحن سريع صاعد وهابط
+    (t,p)=>{const b=rnd(2200,3200),n=6+Math.floor(rnd(0,5));let f=b;for(let i=0;i<n;i++){f=Math.max(1600,Math.min(4800,f*rnd(.82,1.28)));chirp(t,f,rnd(.09,.17),{to:rnd(.82,1.28),vol:.042,vib:rnd(0,15),pan:p});t+=rnd(.11,.2)}},
+    // عصفور: تغريدات قصيرة متقطعة
+    (t,p)=>{const n=3+Math.floor(rnd(0,4));for(let i=0;i<n;i++){chirp(t,rnd(3400,4800),.045,{to:rnd(.78,1.25),vol:.038,type:'triangle',pan:p});t+=rnd(.1,.22)}},
+    // وقواق هادئ: نغمتان هابطتان
+    (t,p)=>{const f=rnd(660,780);chirp(t,f*1.1,.24,{to:.96,vol:.06,pan:p});chirp(t+.38,f*.88,.32,{to:.96,vol:.058,pan:p})},
+    // صفير طويل + تريل: كالقمري
+    (t,p)=>{const f=rnd(1600,2400);chirp(t,f,.28,{to:1.6,vol:.05,vib:8,pan:p});const n=8+Math.floor(rnd(0,8));for(let i=0;i<n;i++){chirp(t+.35+i*.045,f*(i%2?1.1:.92),.032,{to:1.05,vol:.032,pan:p})}},
   ];
-  let lastSp=-1;
+  let lastBird=-1;
   function bird(){
     if(!on||!ac)return;
-    if(valley.isNight()<.5){
-      const calls=Math.random()<.4?2:1;
-      for(let c=0;c<calls;c++){
-        let k;do{k=Math.floor(Math.random()*SPECIES.length)}while(k===lastSp&&SPECIES.length>1);lastSp=k;
-        SPECIES[k](ac.currentTime+.03+c*rnd(.2,.9),rnd(-.8,.8));
+    const night=valley.isNight()>.5;
+    if(!night){
+      const n=Math.random()<.35?2:1;
+      for(let i=0;i<n;i++){
+        let k;do{k=Math.floor(Math.random()*BIRDS.length)}while(k===lastBird&&BIRDS.length>1);lastBird=k;
+        BIRDS[k](ac.currentTime+.05+i*rnd(.15,.7),rnd(-.75,.75));
       }
     }
-    birdT=setTimeout(bird,valley.isNight()<.5?rnd(700,2600):rnd(3000,6000));
+    birdT=setTimeout(bird,night?rnd(4000,9000):rnd(800,2800));
   }
-  /* girl's voice background: play /sounds/sample.mp3 looped softly */
-  let girlAudio=null;
-  function startGirlBg(){
-    if(girlAudio){
-      if(girlAudio.paused)girlAudio.play().catch(()=>{});
-      return;
-    }
-    girlAudio=new Audio('/sounds/sample.mp3');
-    girlAudio.loop=true;
-    girlAudio.volume=0.15;
-    girlAudio.play().catch(()=>{});
+
+  /* تحديث التوازن ليل/نهار باستمرار */
+  function syncMode(){
+    if(!ac||!on)return;
+    const night=valley.isNight();
+    const tgt=ac.currentTime+.8;
+    if(dayG)dayG.gain.setTargetAtTime(Math.max(0,1-night*1.6),tgt,.7);
+    if(nightG)nightG.gain.setTargetAtTime(Math.max(0,night*1.4-.1),tgt,.7);
   }
-  function stopGirlBg(){
-    if(girlAudio&&!girlAudio.paused){girlAudio.pause();girlAudio.currentTime=0;}
+
+  function build(){
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;
+    ac=new AC();
+    master=ac.createGain();master.gain.value=0;
+    // ضغط خفيف لمنع أي قطع مفاجئ
+    const comp=ac.createDynamicsCompressor();comp.threshold.value=-18;comp.knee.value=12;comp.ratio.value=3;comp.attack.value=.08;comp.release.value=.6;
+    master.connect(comp);comp.connect(ac.destination);
+    dayG=buildDay();
+    nightG=buildNight();
+    modeT=setInterval(syncMode,400);
+    return true;
   }
-  /* the little girl's voice: speech synthesis fallback, raised in pitch */
-  const hasSpeech='speechSynthesis' in window&&'SpeechSynthesisUtterance' in window;
-  function pick(ar){
-    const vs=speechSynthesis.getVoices();if(!vs.length)return null;
-    if(ar){const v=vs.find(v=>/^ar/i.test(v.lang));if(v)return v}
-    const en=vs.filter(v=>/^en/i.test(v.lang));
-    return en.find(v=>/samantha|zira|aria|jenny|hazel|karen|susan|google us english|female/i.test(v.name))||en.find(v=>/US|GB/i.test(v.lang))||en[0]||null;
-  }
-  function say(){
-    if(!on||!hasSpeech)return;
-    const it=SEQ[idx%SEQ.length];idx++;
-    const arVoice=it.ar?pick(true):null;
-    const u=new SpeechSynthesisUtterance(it.ar&&!arVoice?'Yasmeen':it.t);
-    const v=arVoice||pick(false);
-    if(v){u.voice=v;u.lang=v.lang}else u.lang=it.ar?'ar-SA':'en-US';
-    u.pitch=1.9;u.rate=it.ar?.78:.72;u.volume=.55;
-    const next=()=>{speechT=setTimeout(say,it.ar?1100:700)};
-    u.onend=next;u.onerror=next;
-    try{speechSynthesis.speak(u)}catch(e){next()}
-  }
+
   btn.addEventListener('click',()=>{
     if(!ac&&!build())return;
     if(ac.state==='suspended')ac.resume();
     on=!on;btn.setAttribute('aria-pressed',String(on));
-    master.gain.cancelScheduledValues(ac.currentTime);master.gain.setTargetAtTime(on?1:0,ac.currentTime,.8);
-    clearTimeout(birdT);clearTimeout(speechT);
-    if(hasSpeech)speechSynthesis.cancel();
-    if(on){
-      birdT=setTimeout(bird,500);speechT=setTimeout(say,1200);
-      startGirlBg();
-    }else{
-      stopGirlBg();
-    }
+    master.gain.cancelScheduledValues(ac.currentTime);
+    master.gain.setTargetAtTime(on?.85:0,ac.currentTime,.9);
+    clearTimeout(birdT);
+    if(on){syncMode();birdT=setTimeout(bird,600);}
+    else{clearInterval(modeT);}
   });
-  if(hasSpeech){speechSynthesis.onvoiceschanged=()=>{};setInterval(()=>{if(on&&!document.hidden&&speechSynthesis.speaking&&!speechSynthesis.paused){speechSynthesis.pause();speechSynthesis.resume()}},9000)}
   document.addEventListener('visibilitychange',()=>{
     if(!ac||!on)return;
-    if(document.hidden){ac.suspend();if(hasSpeech)speechSynthesis.pause()}
-    else{ac.resume();if(hasSpeech)speechSynthesis.resume()}
+    if(document.hidden)ac.suspend();else ac.resume();
   });
 })();
 
