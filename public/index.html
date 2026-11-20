@@ -1069,17 +1069,17 @@ const go=document.getElementById('go');
     const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;
     ac=new AC();master=ac.createGain();master.gain.value=0;lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=9000;
     master.connect(lp);lp.connect(ac.destination);
-    // wind: slow-moving band-passed noise
+    // wind: slow-moving band-passed noise (reduced volume)
     const wf=ac.createBiquadFilter();wf.type='bandpass';wf.frequency.value=420;wf.Q.value=.6;
-    const wg=ac.createGain();wg.gain.value=.11;
+    const wg=ac.createGain();wg.gain.value=.07;
     loopNoise(4,true).connect(wf);wf.connect(wg);wg.connect(master);
-    lfo(.07,.07,wg.gain);lfo(.05,160,wf.frequency);
-    // leaves and a little stream: bright noise with a gentle shimmer
+    lfo(.07,.04,wg.gain);lfo(.05,160,wf.frequency);
+    // leaves: softer shimmer (reduced)
     const hf=ac.createBiquadFilter();hf.type='highpass';hf.frequency.value=1500;
     const lf=ac.createBiquadFilter();lf.type='lowpass';lf.frequency.value=5200;
-    const sg=ac.createGain();sg.gain.value=.028;
+    const sg=ac.createGain();sg.gain.value=.016;
     loopNoise(3,false).connect(hf);hf.connect(lf);lf.connect(sg);sg.connect(master);
-    lfo(.31,.012,sg.gain);lfo(.9,.006,sg.gain);
+    lfo(.31,.008,sg.gain);lfo(.9,.004,sg.gain);
     // crickets for the night: a high tone switched on and off very fast
     const co=ac.createOscillator(),cg=ac.createGain();co.frequency.value=4300;cg.gain.value=0;
     co.connect(cg);lfo(31,.012,cg.gain);co.start();
@@ -1135,7 +1135,22 @@ const go=document.getElementById('go');
     }
     birdT=setTimeout(bird,valley.isNight()<.5?rnd(700,2600):rnd(3000,6000));
   }
-  /* the little girl's voice: speech synthesis, raised in pitch; the voices come from the visitor's device */
+  /* girl's voice background: play /sounds/sample.mp3 looped softly */
+  let girlAudio=null;
+  function startGirlBg(){
+    if(girlAudio){
+      if(girlAudio.paused)girlAudio.play().catch(()=>{});
+      return;
+    }
+    girlAudio=new Audio('/sounds/sample.mp3');
+    girlAudio.loop=true;
+    girlAudio.volume=0.15;
+    girlAudio.play().catch(()=>{});
+  }
+  function stopGirlBg(){
+    if(girlAudio&&!girlAudio.paused){girlAudio.pause();girlAudio.currentTime=0;}
+  }
+  /* the little girl's voice: speech synthesis fallback, raised in pitch */
   const hasSpeech='speechSynthesis' in window&&'SpeechSynthesisUtterance' in window;
   function pick(ar){
     const vs=speechSynthesis.getVoices();if(!vs.length)return null;
@@ -1162,7 +1177,12 @@ const go=document.getElementById('go');
     master.gain.cancelScheduledValues(ac.currentTime);master.gain.setTargetAtTime(on?1:0,ac.currentTime,.8);
     clearTimeout(birdT);clearTimeout(speechT);
     if(hasSpeech)speechSynthesis.cancel();
-    if(on){birdT=setTimeout(bird,500);speechT=setTimeout(say,1200)}
+    if(on){
+      birdT=setTimeout(bird,500);speechT=setTimeout(say,1200);
+      startGirlBg();
+    }else{
+      stopGirlBg();
+    }
   });
   if(hasSpeech){speechSynthesis.onvoiceschanged=()=>{};setInterval(()=>{if(on&&!document.hidden&&speechSynthesis.speaking&&!speechSynthesis.paused){speechSynthesis.pause();speechSynthesis.resume()}},9000)}
   document.addEventListener('visibilitychange',()=>{
@@ -1464,22 +1484,60 @@ const go=document.getElementById('go');
 
   /* speak(text,{slow}) — يجرب ملف mp3 أولًا ثم Web Speech */
   let _curAudio=null;
-  function speak(text,{slow=false}={}){
-    // مسار الملف: letters/a.mp3 للحروف، words/apple.mp3 للكلمات
-    const isLetter=text.length===1&&/[A-Za-z]/.test(text);
-    const fname=(isLetter?'letters/'+text:'words/'+text).toLowerCase()
-                 .replace(/[^a-z0-9/]/g,'_')+'.mp3';
-    const path=SOUND_BASE+fname;
-    _hasMp3(path).then(ok=>{
-      if(ok){
-        if(_synth)_synth.cancel();
-        if(_curAudio){_curAudio.pause();_curAudio.src='';}
-        _curAudio=new Audio(path);
-        _curAudio.play().catch(()=>_wsFallback(text,slow));
-      }else{
-        _wsFallback(text,slow);
-      }
+  /* playMp3(path) — يشغل ملف mp3، يرجع promise */
+  function playMp3(path){
+    return _hasMp3(path).then(ok=>{
+      if(!ok)return false;
+      if(_synth)_synth.cancel();
+      if(_curAudio){_curAudio.pause();_curAudio.src='';}
+      _curAudio=new Audio(path);
+      return _curAudio.play().then(()=>true).catch(()=>false);
     });
+  }
+  /* playSeq(paths, delay) — يشغل قائمة ملفات بالتسلسل */
+  function playSeq(paths,delay=350){
+    let p=Promise.resolve();
+    paths.forEach((path,i)=>{
+      p=p.then(()=>new Promise(res=>{
+        if(!path){res();return}
+        playMp3(path).then(ok=>{
+          setTimeout(res,ok?delay:0);
+        });
+      }));
+    });
+    return p;
+  }
+  /* speak(text,{slow}) — يحلل النص ويشغل ملفات mp3 أو Web Speech */
+  function speak(text,{slow=false}={}){
+    // طابق الجمل الشائعة
+    const m1=text.match(/^([A-Z])\.\s*\1 is for (.+)$/i); // "A. A is for Apple"
+    const m2=text.match(/^Yes!\s*([A-Z]) is for (.+)$/i);  // "Yes! A is for Apple"
+    const m3=text.match(/^No\.\s*([A-Z]) is for (.+)$/i);  // "No. A is for Apple"
+    const m4=text.match(/^(Great job!|Excellent!|Great! The word is|The word is)\s*(.*)$/i);
+    const isLetter=text.length===1&&/[A-Za-z]/.test(text);
+    const isWord=/^[A-Za-z\-]+$/.test(text)&&text.length>1;
+    if(m1){
+      const L=m1[1].toLowerCase(),w=m1[2].toLowerCase().replace(/[^a-z0-9]/g,'_');
+      const lp=SOUND_BASE+'letters/'+L+'.mp3',wp=SOUND_BASE+'words/'+w+'.mp3';
+      playMp3(lp).then(ok=>{if(!ok)_wsFallback(text,slow);else setTimeout(()=>playMp3(wp),350)});
+      return;
+    }
+    if(m2||m3){
+      const src=m2||m3,L=src[1].toLowerCase(),w=src[2].toLowerCase().replace(/[^a-z0-9]/g,'_');
+      playSeq([SOUND_BASE+'letters/'+L+'.mp3',SOUND_BASE+'words/'+w+'.mp3'],300)
+        .then(()=>{}).catch(()=>_wsFallback(text,slow));
+      return;
+    }
+    if(isLetter){
+      playMp3(SOUND_BASE+'letters/'+text.toLowerCase()+'.mp3').then(ok=>{if(!ok)_wsFallback(text,slow)});
+      return;
+    }
+    if(isWord){
+      const fname=text.toLowerCase().replace(/[^a-z0-9]/g,'_')+'.mp3';
+      playMp3(SOUND_BASE+'words/'+fname).then(ok=>{if(!ok)_wsFallback(text,slow)});
+      return;
+    }
+    _wsFallback(text,slow);
   }
 
   /* ---- تبويبات اللعبة ---- */
